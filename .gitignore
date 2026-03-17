@@ -1,0 +1,4 @@
+.codex-runtime/
+backend/target/
+frontend/dist/
+uploads/
