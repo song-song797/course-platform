@@ -1,0 +1,12 @@
+demo:
+  bulk-seed:
+    enabled: true
+    reset-before-seed: true
+    random-seed: 20260317
+    course-count: 18
+    members-per-course: 20
+    assignment-count: 60
+    reviewing-assignment-count: 24
+    closed-assignment-count: 14
+    group-student-review-count: 11
+    individual-student-review-count: 10

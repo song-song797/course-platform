@@ -1,0 +1,25 @@
+server:
+  port: 0
+
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/course_platform_demo_test?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: root
+    password: 1234
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password:
+  sql:
+    init:
+      mode: never
+
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+
+demo:
+  token-prefix: "course-platform-demo:test:token:"
+  bulk-seed:
+    enabled: false
