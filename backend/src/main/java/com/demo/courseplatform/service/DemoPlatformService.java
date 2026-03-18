@@ -38,6 +38,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,7 +48,9 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 public class DemoPlatformService {
 
+    private static final Logger log = LoggerFactory.getLogger(DemoPlatformService.class);
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final String COURSE_EVENT_PREFIX = "[COURSE_EVENT]";
     private static final String REVIEW_STATUS_PENDING = "PENDING";
     private static final String REVIEW_STATUS_IGNORED = "IGNORED";
     private static final String REVIEW_STATUS_RESTORED = "RESTORED";
@@ -600,6 +604,7 @@ public class DemoPlatformService {
 
         AssignmentGroupEntity group = resolveSubmissionGroup(userId, assignment);
         SubmissionEntity submission = submissionMapper.findSubmissionByGroupId(group.id);
+        boolean created = submission == null;
         if (submission == null) {
             submission = new SubmissionEntity();
             submission.assignmentId = assignmentId;
@@ -621,6 +626,7 @@ public class DemoPlatformService {
         } else {
             submissionMapper.updateSubmission(submission);
         }
+        logSubmissionEvent(created ? "created" : "updated", userId, assignment, submission, group.id);
         return buildSubmissionVos(List.of(submission)).get(0);
     }
 
@@ -747,6 +753,7 @@ public class DemoPlatformService {
 
         saveEvaluationItems(evaluation.id, request.itemScores());
         recomputeStudentAbnormalities(submissionId);
+        logStudentEvaluationEvent(userId, assignment, submission, evaluation, request.itemScores().size());
         return Map.of("saved", true, "evaluationId", evaluation.id, "totalScore", evaluation.totalScore);
     }
 
@@ -764,6 +771,7 @@ public class DemoPlatformService {
         BigDecimal totalScore = scoreCalculator.calculateWeightedTotal(request.itemScores(), rubricItems);
 
         EvaluationEntity evaluation = evaluationMapper.findBySubmissionAndEvaluator(submissionId, userId, "TEACHER");
+        boolean created = evaluation == null;
         if (evaluation == null) {
             evaluation = new EvaluationEntity();
             evaluation.assignmentId = assignment.id;
@@ -785,7 +793,63 @@ public class DemoPlatformService {
             evaluationMapper.deleteItemsByEvaluationId(evaluation.id);
         }
         saveEvaluationItems(evaluation.id, request.itemScores());
+        logTeacherScoreEvent(created ? "created" : "updated", userId, assignment, submission, evaluation, request.itemScores().size());
         return Map.of("saved", true, "evaluationId", evaluation.id, "totalScore", evaluation.totalScore);
+    }
+
+    private void logSubmissionEvent(String action, Long userId, AssignmentEntity assignment, SubmissionEntity submission, Long groupId) {
+        UserEntity actor = requireUser(userId);
+        log.info(
+            "{} submission action={} actorUserId={} actorUsername={} actorRole={} assignmentId={} assignmentTitle={} submissionId={} groupId={} projectName={} late={}",
+            COURSE_EVENT_PREFIX,
+            action,
+            actor.id,
+            actor.username,
+            actor.role,
+            assignment.id,
+            assignment.title,
+            submission.id,
+            groupId,
+            submission.projectName,
+            submission.late
+        );
+    }
+
+    private void logStudentEvaluationEvent(Long userId, AssignmentEntity assignment, SubmissionEntity submission,
+                                           EvaluationEntity evaluation, int itemCount) {
+        UserEntity actor = requireUser(userId);
+        log.info(
+            "{} peer_evaluation action=created actorUserId={} actorUsername={} assignmentId={} assignmentTitle={} submissionId={} projectName={} evaluationId={} totalScore={} rubricItemCount={}",
+            COURSE_EVENT_PREFIX,
+            actor.id,
+            actor.username,
+            assignment.id,
+            assignment.title,
+            submission.id,
+            submission.projectName,
+            evaluation.id,
+            evaluation.totalScore,
+            itemCount
+        );
+    }
+
+    private void logTeacherScoreEvent(String action, Long userId, AssignmentEntity assignment, SubmissionEntity submission,
+                                      EvaluationEntity evaluation, int itemCount) {
+        UserEntity actor = requireUser(userId);
+        log.info(
+            "{} teacher_score action={} actorUserId={} actorUsername={} assignmentId={} assignmentTitle={} submissionId={} projectName={} evaluationId={} totalScore={} rubricItemCount={}",
+            COURSE_EVENT_PREFIX,
+            action,
+            actor.id,
+            actor.username,
+            assignment.id,
+            assignment.title,
+            submission.id,
+            submission.projectName,
+            evaluation.id,
+            evaluation.totalScore,
+            itemCount
+        );
     }
 
     public List<DemoViews.EvaluationRecordVo> getEvaluations(Long teacherUserId, Long assignmentId,
@@ -1170,7 +1234,7 @@ public class DemoPlatformService {
             formatDateTime(resolvePublishedAt(assignment)),
             snapshot.rankBySubmissionId().get(submissionId),
             snapshot.totalProjects(),
-            bundle == null ? List.of() : bundle.radar(),
+            snapshot.dimensionAverages(),
             bundle == null ? List.of() : bundle.radar(),
             bundle == null ? List.of() : bundle.comments()
         );
@@ -1187,7 +1251,7 @@ public class DemoPlatformService {
             formatDateTime(resolvePublishedAt(assignment)),
             null,
             snapshot.totalProjects(),
-            List.of(),
+            snapshot.dimensionAverages(),
             List.of(),
             List.of()
         );

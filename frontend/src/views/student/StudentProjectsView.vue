@@ -7,6 +7,7 @@ import { createEvaluation, getProjects, getStudentAssignment } from '../../api/s
 const route = useRoute()
 const assignment = ref(null)
 const page = ref({ list: [], total: 0, pageNo: 1, pageSize: 10 })
+const projectSummary = ref({ total: 0, reviewable: 0, evaluated: 0 })
 const scoringProject = ref(null)
 const dialogVisible = ref(false)
 const form = reactive({
@@ -22,9 +23,29 @@ function handlePageChange(pageNo) {
   loadProjects(pageNo)
 }
 
+async function loadProjectSummary() {
+  const pageSize = 100
+  let pageNo = 1
+  let total = 0
+  const allProjects = []
+
+  do {
+    const result = await getProjects(route.params.assignmentId, { pageNo, pageSize })
+    total = result.total || 0
+    allProjects.push(...result.list)
+    pageNo += 1
+  } while (allProjects.length < total)
+
+  projectSummary.value = {
+    total,
+    reviewable: allProjects.filter((item) => item.canEvaluate).length,
+    evaluated: allProjects.filter((item) => item.evaluated).length,
+  }
+}
+
 async function loadData() {
   assignment.value = await getStudentAssignment(route.params.assignmentId)
-  await loadProjects(1)
+  await Promise.all([loadProjects(1), loadProjectSummary()])
 }
 
 onMounted(() => {
@@ -52,7 +73,7 @@ async function handleScore() {
     overallComment: form.overallComment,
   })
   dialogVisible.value = false
-  await loadProjects(page.value.pageNo)
+  await Promise.all([loadProjects(page.value.pageNo), loadProjectSummary()])
   ElMessage.success('互评已提交')
 }
 
@@ -73,7 +94,9 @@ watch(() => route.params.assignmentId, async (next, previous) => {
           项目广场会自动屏蔽自己、自己组以及黑名单项目。你可以直接查看当前得分状态，并进入评分弹窗完成互评。
         </p>
         <div class="page-hero__meta">
-          <span>共 {{ page.total }} 个项目</span>
+          <span>共 {{ projectSummary.total }} 个项目</span>
+          <span>共 {{ projectSummary.reviewable }} 个可评项目</span>
+          <span>已完成 {{ projectSummary.evaluated }} 个评分</span>
           <span>本页 {{ availableCount }} 个可评项目</span>
           <span>{{ assignment.displayStatus || assignment.status }}</span>
         </div>
@@ -95,6 +118,25 @@ watch(() => route.params.assignmentId, async (next, previous) => {
       show-icon
       style="margin-bottom: 20px;"
     />
+
+    <div class="metric-grid" style="margin-bottom: 20px;">
+      <div class="metric-card">
+        <span class="muted">本作业项目数</span>
+        <strong>{{ projectSummary.total }}</strong>
+      </div>
+      <div class="metric-card">
+        <span class="muted">可评项目数</span>
+        <strong>{{ projectSummary.reviewable }}</strong>
+      </div>
+      <div class="metric-card">
+        <span class="muted">已评分项目数</span>
+        <strong>{{ projectSummary.evaluated }}</strong>
+      </div>
+      <div class="metric-card">
+        <span class="muted">当前榜单</span>
+        <strong>{{ assignment?.resultsPublished ? '最终榜' : '实时榜' }}</strong>
+      </div>
+    </div>
 
     <div class="section-card">
       <span class="section-eyebrow">project list</span>

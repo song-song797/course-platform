@@ -7,12 +7,6 @@ const router = useRouter()
 const home = ref(null)
 const page = ref({ list: [], total: 0, pageNo: 1, pageSize: 10 })
 
-const toneMap = {
-  warning: 'warning',
-  primary: 'primary',
-  success: 'success',
-}
-
 async function loadHome() {
   home.value = await getStudentHome()
 }
@@ -51,6 +45,15 @@ function goResultHighlight(item) {
 
 function openAssignment(assignmentId) {
   router.push(`/student/assignments/${assignmentId}`)
+}
+
+function taskTypeLabel(taskType) {
+  return {
+    DUE_SOON: '临近截止',
+    TODO_SUBMIT: '待提交',
+    GO_REVIEW: '去互评',
+    RESULT_AVAILABLE: '结果已发布',
+  }[taskType] || taskType
 }
 
 onMounted(() => {
@@ -147,7 +150,7 @@ const courseTerms = computed(() => new Set(page.value.list.map((item) => item.te
           <div class="hall-task-card__meta">
             <span>{{ task.mode || 'RESULT' }}</span>
             <span>{{ task.deadline || '--' }}</span>
-            <span>{{ task.taskType }}</span>
+            <span>{{ taskTypeLabel(task.taskType) }}</span>
           </div>
           <div class="toolbar" style="margin-top: 14px;">
             <el-button type="primary" @click="goTask(task)">{{ task.actionLabel }}</el-button>

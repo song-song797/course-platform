@@ -493,6 +493,62 @@
 - `targetProjectName`：`string`
 - `createdAt`：`string`
 
+#### 2.2.21 学生大厅聚合对象
+
+`StudentOverviewVo`
+
+- `totalCourses`：`number`
+- `totalAssignments`：`number`
+- `pendingSubmissionCount`：`number`
+- `reviewingAssignmentCount`：`number`
+- `publishedResultCount`：`number`
+- `availableReviewCount`：`number`
+
+`StudentTaskCardVo`
+
+- `assignmentId`：`number`
+- `courseId`：`number`
+- `courseName`：`string`
+- `assignmentTitle`：`string`
+- `mode`：`string`
+- `displayStatus`：`string`
+- `deadline`：`string | null`
+- `taskType`：`string`，固定为 `DUE_SOON` / `TODO_SUBMIT` / `GO_REVIEW` / `RESULT_AVAILABLE`
+- `actionLabel`：`string`
+
+`StudentReviewHighlightVo`
+
+- `assignmentId`：`number`
+- `courseName`：`string`
+- `assignmentTitle`：`string`
+- `totalProjects`：`number`
+- `reviewableProjects`：`number`
+- `leaderboardType`：`string`，当前为 `REALTIME` / `FINAL`
+- `displayStatus`：`string`
+
+`StudentResultHighlightVo`
+
+- `assignmentId`：`number`
+- `courseName`：`string`
+- `assignmentTitle`：`string`
+- `publishedAt`：`string | null`
+- `currentRank`：`number | null`
+- `finalScore`：`number | null`
+
+`StudentActivityBannerVo`
+
+- `title`：`string`
+- `description`：`string`
+- `tone`：`string`，当前为 `warning` / `primary` / `success`
+
+`StudentHomeVo`
+
+- `overview`：`StudentOverviewVo`
+- `taskQueue`：`StudentTaskCardVo[]`，最多 12 条
+- `reviewHighlights`：`StudentReviewHighlightVo[]`，最多 6 条
+- `resultHighlights`：`StudentResultHighlightVo[]`，最多 6 条
+- `activityBanners`：`StudentActivityBannerVo[]`，最多 3 条
+
 ## 3. 认证接口
 
 ### 3.1 登录
@@ -1140,7 +1196,91 @@ t1001,测试教师,TEACHER
 
 ## 6. 学生接口
 
-### 6.1 获取我的课程分页列表
+### 6.1 获取学生大厅聚合数据
+
+**接口名称**：获取学生大厅聚合数据  
+**请求路径**：`/student/home`  
+**请求方式**：`GET`  
+**是否鉴权**：是  
+**适用角色**：`STUDENT`
+
+**请求参数**
+
+- Path 参数：无
+- Query 参数：无
+
+**成功响应 `data` 结构**
+
+- `StudentHomeVo`
+
+**成功响应示例**
+
+```json
+{
+  "code": 0,
+  "message": "ok",
+  "data": {
+    "overview": {
+      "totalCourses": 15,
+      "totalAssignments": 48,
+      "pendingSubmissionCount": 9,
+      "reviewingAssignmentCount": 20,
+      "publishedResultCount": 10,
+      "availableReviewCount": 136
+    },
+    "taskQueue": [
+      {
+        "assignmentId": 1016,
+        "courseId": 101,
+        "courseName": "软件工程课程设计",
+        "assignmentTitle": "BULK-DEMO | 团队协同中台 / 软件工程",
+        "mode": "GROUP",
+        "displayStatus": "提交中",
+        "deadline": "2026-03-18 23:59:00",
+        "taskType": "DUE_SOON",
+        "actionLabel": "去提交"
+      }
+    ],
+    "reviewHighlights": [
+      {
+        "assignmentId": 1028,
+        "courseName": "课程平台增强实验 8",
+        "assignmentTitle": "BULK-DEMO | 任务编排与追踪中心 / 课程平台增强实验 8",
+        "totalProjects": 16,
+        "reviewableProjects": 9,
+        "leaderboardType": "REALTIME",
+        "displayStatus": "互评中"
+      }
+    ],
+    "resultHighlights": [
+      {
+        "assignmentId": 1005,
+        "courseName": "数据可视化专题",
+        "assignmentTitle": "可视化数据故事",
+        "publishedAt": "2026-03-16 18:00:00",
+        "currentRank": 2,
+        "finalScore": 88.4
+      }
+    ],
+    "activityBanners": [
+      {
+        "title": "今日优先完成",
+        "description": "还有 9 个待提交任务，建议优先处理临近截止的作业。",
+        "tone": "warning"
+      }
+    ]
+  },
+  "timestamp": "2026-03-17 11:47:23"
+}
+```
+
+**业务说明**
+
+- 该接口是学生默认大厅首屏的聚合接口，不替代现有课程分页接口
+- `activityBanners` 只基于真实课程、作业、提交和评分数据聚合生成，不包含伪活动流
+- 当学生尚无任何课程时，会返回各模块空集合和全零概览
+
+### 6.2 获取我的课程分页列表
 
 **接口名称**：获取我的课程分页列表  
 **请求路径**：`/student/courses`  
@@ -1158,7 +1298,7 @@ t1001,测试教师,TEACHER
 
 - `PageResult<CourseCardVo>`
 
-### 6.2 获取作业详情
+### 6.3 获取作业详情
 
 **接口名称**：获取作业详情  
 **请求路径**：`/student/assignments/{assignmentId}`  
@@ -1259,7 +1399,7 @@ t1001,测试教师,TEACHER
 - 若学生尚未提交，`summary` 可能为 `null`
 - 若是小组作业但还未被分组，`myGroup=null` 且 `ungroupedForGroupAssignment=true`
 
-### 6.3 获取我的提交
+### 6.4 获取我的提交
 
 **接口名称**：获取我的提交  
 **请求路径**：`/student/assignments/{assignmentId}/my-submission`  
@@ -1314,7 +1454,7 @@ t1001,测试教师,TEACHER
 }
 ```
 
-### 6.4 提交项目
+### 6.5 提交项目
 
 **接口名称**：提交项目  
 **请求路径**：`/student/assignments/{assignmentId}/submit`  
@@ -1366,7 +1506,7 @@ t1001,测试教师,TEACHER
 - 小组作业必须先由教师完成分组
 - 个人作业会自动创建个人组
 
-### 6.5 更新我的提交
+### 6.6 更新我的提交
 
 **接口名称**：更新我的提交  
 **请求路径**：`/student/submissions/{submissionId}`  
@@ -1386,7 +1526,7 @@ t1001,测试教师,TEACHER
 - 只有提交成员本人才能修改
 - 其他约束与“提交项目”一致
 
-### 6.6 获取项目广场分页列表
+### 6.7 获取项目广场分页列表
 
 **接口名称**：获取项目广场分页列表  
 **请求路径**：`/student/assignments/{assignmentId}/projects`  
@@ -1442,7 +1582,7 @@ t1001,测试教师,TEACHER
   - 还没有评过
   - 不在黑名单中
 
-### 6.7 提交学生互评
+### 6.8 提交学生互评
 
 **接口名称**：提交学生互评  
 **请求路径**：`/student/projects/{submissionId}/evaluations`  
@@ -1515,7 +1655,7 @@ t1001,测试教师,TEACHER
 - 不能评价自己或自己所在小组
 - 黑名单命中的项目不可评价
 
-### 6.8 获取我的结果看板
+### 6.9 获取我的结果看板
 
 **接口名称**：获取我的结果看板  
 **请求路径**：`/student/assignments/{assignmentId}/my-dashboard`  
@@ -1597,7 +1737,7 @@ t1001,测试教师,TEACHER
 - 该接口里的 `leaderboard` 是完整榜单，不分页
 - 若学生尚未提交，`submission` 可能为 `null`
 
-### 6.9 获取排行榜分页列表
+### 6.10 获取排行榜分页列表
 
 **接口名称**：获取排行榜分页列表  
 **请求路径**：`/student/assignments/{assignmentId}/leaderboard`  

@@ -1,18 +1,18 @@
 INSERT IGNORE INTO sys_user (id, username, password_hash, display_name, role, first_login_reset_required) VALUES
-(1, 'admin', SHA2('admin', 256), '系统管理员', 'ADMIN', 0),
-(2, 't001', SHA2('t001', 256), '王老师', 'TEACHER', 0),
-(7, 't002', SHA2('t002', 256), '刘老师', 'TEACHER', 0),
-(8, 't003', SHA2('t003', 256), '周老师', 'TEACHER', 0),
-(3, 's001', SHA2('s001', 256), '张同学', 'STUDENT', 1),
-(4, 's002', SHA2('s002', 256), '李同学', 'STUDENT', 0),
-(5, 's003', SHA2('s003', 256), '陈同学', 'STUDENT', 0),
-(6, 's004', SHA2('s004', 256), '赵同学', 'STUDENT', 0),
-(9, 's005', SHA2('s005', 256), '吴同学', 'STUDENT', 0),
-(10, 's006', SHA2('s006', 256), '郑同学', 'STUDENT', 0),
-(11, 's007', SHA2('s007', 256), '孙同学', 'STUDENT', 0),
-(12, 's008', SHA2('s008', 256), '钱同学', 'STUDENT', 0),
-(13, 's009', SHA2('s009', 256), '蒋同学', 'STUDENT', 0),
-(14, 's010', SHA2('s010', 256), '何同学', 'STUDENT', 0);
+(1, 'admin', 'admin', '系统管理员', 'ADMIN', 0),
+(2, 't001', 't001', '王老师', 'TEACHER', 0),
+(7, 't002', 't002', '刘老师', 'TEACHER', 0),
+(8, 't003', 't003', '周老师', 'TEACHER', 0),
+(3, 's001', 's001', '张同学', 'STUDENT', 1),
+(4, 's002', 's002', '李同学', 'STUDENT', 0),
+(5, 's003', 's003', '陈同学', 'STUDENT', 0),
+(6, 's004', 's004', '赵同学', 'STUDENT', 0),
+(9, 's005', 's005', '吴同学', 'STUDENT', 0),
+(10, 's006', 's006', '郑同学', 'STUDENT', 0),
+(11, 's007', 's007', '孙同学', 'STUDENT', 0),
+(12, 's008', 's008', '钱同学', 'STUDENT', 0),
+(13, 's009', 's009', '蒋同学', 'STUDENT', 0),
+(14, 's010', 's010', '何同学', 'STUDENT', 0);
 
 INSERT IGNORE INTO course (id, code, name, term) VALUES
 (101, 'SE2026', '软件工程课程设计', '2026 春'),

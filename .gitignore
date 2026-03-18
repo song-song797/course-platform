@@ -1,11 +1,4 @@
-.DS_Store
-
-# Local runtime artifacts
 .codex-runtime/
-
-# Frontend local artifacts
-frontend/node_modules/
-frontend/dist/
-
-# Backend build output
 backend/target/
+frontend/dist/
+uploads/

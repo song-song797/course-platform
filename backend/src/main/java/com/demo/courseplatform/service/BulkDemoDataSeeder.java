@@ -205,6 +205,7 @@ public class BulkDemoDataSeeder implements ApplicationRunner {
         seedSubmissions(assignments, usersById);
         seedBlacklists(assignments);
         seedEvaluations(assignments);
+        verifySeedTargets(courseSeeds);
 
         long totalAssignments = assignments.size() + currentAssignmentCount;
         long totalSubmissions = assignments.stream().mapToLong(item -> item.submissions.size()).sum() + countExistingSubmissions();
@@ -226,7 +227,7 @@ public class BulkDemoDataSeeder implements ApplicationRunner {
         if (properties.getReviewingAssignmentCount() + properties.getClosedAssignmentCount() >= properties.getAssignmentCount()) {
             throw new IllegalStateException("reviewingAssignmentCount + closedAssignmentCount 必须小于 assignmentCount");
         }
-        if (properties.getAssignmentCount() < FIRST_SCREEN_COURSE_TARGET * REMAINING_MIN_ASSIGNMENTS) {
+        if (properties.getAssignmentCount() < minimumAssignmentsForCoverage()) {
             throw new IllegalStateException("assignmentCount 过小，无法覆盖学生大厅的课程现场区");
         }
         if (targetStudentsPerCourse() < 14) {
@@ -235,6 +236,121 @@ public class BulkDemoDataSeeder implements ApplicationRunner {
         if (properties.getGroupStudentReviewCount() < 6 || properties.getIndividualStudentReviewCount() < 5) {
             throw new IllegalStateException("学生互评目标数过小，无法营造默认大厅氛围");
         }
+    }
+
+    private int minimumAssignmentsForCoverage() {
+        int prioritizedCourseCount = Math.min(properties.getCourseCount(), FIRST_SCREEN_COURSE_TARGET);
+        int remainingCourseCount = Math.max(properties.getCourseCount() - prioritizedCourseCount, 0);
+        return prioritizedCourseCount * FIRST_SCREEN_MIN_ASSIGNMENTS + remainingCourseCount * REMAINING_MIN_ASSIGNMENTS;
+    }
+
+    private void verifySeedTargets(List<CourseSeed> courseSeeds) {
+        List<AssignmentEntity> assignments = loadAssignments(courseSeeds);
+        if (courseSeeds.size() != properties.getCourseCount()) {
+            throw new IllegalStateException("课程总量校验失败，预期 " + properties.getCourseCount() + "，实际 " + courseSeeds.size());
+        }
+        if (assignments.size() != properties.getAssignmentCount()) {
+            throw new IllegalStateException("作业总量校验失败，预期 " + properties.getAssignmentCount() + "，实际 " + assignments.size());
+        }
+
+        Map<String, Long> statusCounts = assignments.stream()
+            .collect(Collectors.groupingBy(item -> item.status, LinkedHashMap::new, Collectors.counting()));
+        assertCount(statusCounts, "REVIEWING", properties.getReviewingAssignmentCount(), "互评中作业数");
+        assertCount(statusCounts, "CLOSED", properties.getClosedAssignmentCount(), "已发布结果作业数");
+        assertCount(statusCounts, "SUBMITTING",
+            properties.getAssignmentCount() - properties.getReviewingAssignmentCount() - properties.getClosedAssignmentCount(),
+            "提交中作业数");
+
+        Map<String, Long> modeCounts = assignments.stream()
+            .collect(Collectors.groupingBy(item -> item.mode, LinkedHashMap::new, Collectors.counting()));
+        int expectedGroupCount = expectedGroupAssignmentCount();
+        assertCount(modeCounts, "GROUP", expectedGroupCount, "小组作业数");
+        assertCount(modeCounts, "INDIVIDUAL", properties.getAssignmentCount() - expectedGroupCount, "个人作业数");
+
+        for (int index = 0; index < Math.min(FIRST_SCREEN_COURSE_TARGET, courseSeeds.size()); index++) {
+            CourseSeed courseSeed = courseSeeds.get(index);
+            long count = assignments.stream().filter(item -> Objects.equals(item.courseId, courseSeed.course.id)).count();
+            if (count < FIRST_SCREEN_MIN_ASSIGNMENTS) {
+                throw new IllegalStateException("学生大厅首屏课程作业数不足：" + courseSeed.course.name + " 仅有 " + count + " 个作业");
+            }
+        }
+
+        long dueSoonSubmittingAssignments = assignments.stream()
+            .filter(item -> "SUBMITTING".equals(item.status))
+            .filter(item -> isDueSoonDeadline(item.deadline))
+            .count();
+        if (dueSoonSubmittingAssignments < MIN_DUE_SOON_SUBMITTING_ASSIGNMENTS) {
+            throw new IllegalStateException("临近截止作业数不足，预期至少 " + MIN_DUE_SOON_SUBMITTING_ASSIGNMENTS
+                + "，实际 " + dueSoonSubmittingAssignments);
+        }
+
+        long totalSubmissions = countTotalSubmissions(assignments);
+        if (totalSubmissions < 380) {
+            throw new IllegalStateException("提交总量不足，预期至少 380，实际 " + totalSubmissions);
+        }
+
+        long totalEvaluations = countTotalEvaluations(assignments);
+        if (totalEvaluations < 2400) {
+            throw new IllegalStateException("评分总量不足，预期至少 2400，实际 " + totalEvaluations);
+        }
+
+        long denseCommentAssignments = countAssignmentsWithDenseComments(assignments);
+        if (denseCommentAssignments < 12) {
+            throw new IllegalStateException("高密度匿名评语作业数不足，预期至少 12，实际 " + denseCommentAssignments);
+        }
+    }
+
+    private List<AssignmentEntity> loadAssignments(List<CourseSeed> courseSeeds) {
+        List<AssignmentEntity> assignments = new ArrayList<>();
+        for (CourseSeed courseSeed : courseSeeds) {
+            assignments.addAll(assignmentMapper.findByCourseId(courseSeed.course.id));
+        }
+        return assignments;
+    }
+
+    private void assertCount(Map<String, Long> counts, String key, int expected, String label) {
+        long actual = counts.getOrDefault(key, 0L);
+        if (actual != expected) {
+            throw new IllegalStateException(label + "校验失败，预期 " + expected + "，实际 " + actual);
+        }
+    }
+
+    private int expectedGroupAssignmentCount() {
+        return (int) Math.round(properties.getAssignmentCount() * (TARGET_GROUP_ASSIGNMENTS / 48D));
+    }
+
+    private boolean isDueSoonDeadline(LocalDateTime deadline) {
+        if (deadline == null) {
+            return false;
+        }
+        LocalDateTime now = LocalDateTime.now();
+        return !deadline.isBefore(now) && !deadline.isAfter(now.plusHours(72));
+    }
+
+    private long countTotalSubmissions(List<AssignmentEntity> assignments) {
+        return assignments.stream()
+            .mapToLong(item -> submissionMapper.findSubmissionsByAssignmentId(item.id).size())
+            .sum();
+    }
+
+    private long countTotalEvaluations(List<AssignmentEntity> assignments) {
+        return assignments.stream()
+            .mapToLong(item -> evaluationMapper.findByAssignmentId(item.id, null, null, null, false).size())
+            .sum();
+    }
+
+    private long countAssignmentsWithDenseComments(List<AssignmentEntity> assignments) {
+        return assignments.stream()
+            .filter(this::hasDenseStudentComments)
+            .count();
+    }
+
+    private boolean hasDenseStudentComments(AssignmentEntity assignment) {
+        Map<Long, Long> studentCommentCounts = evaluationMapper.findByAssignmentId(assignment.id, null, null, null, false).stream()
+            .filter(item -> "STUDENT".equals(item.evaluatorRole))
+            .filter(item -> item.comment != null && !item.comment.isBlank())
+            .collect(Collectors.groupingBy(item -> item.submissionId, LinkedHashMap::new, Collectors.counting()));
+        return studentCommentCounts.values().stream().anyMatch(count -> count >= 6);
     }
 
     private void cleanupBulkData() {
@@ -472,11 +588,13 @@ public class BulkDemoDataSeeder implements ApplicationRunner {
 
         List<GeneratedAssignment> assignments = new ArrayList<>();
         int newAssignmentOrder = 0;
+        Map<String, Integer> statusOrders = new LinkedHashMap<>();
         for (CourseSeed seed : courseSeeds) {
             int extraCount = extraAssignmentsByCourse.getOrDefault(seed.course.id, 0);
             for (int localIndex = 0; localIndex < extraCount; localIndex++) {
                 String mode = modePool.remove(0);
                 String status = statusPool.remove(0);
+                int statusOrder = statusOrders.getOrDefault(status, 0);
                 AssignmentEntity assignment = new AssignmentEntity();
                 assignment.courseId = seed.course.id;
                 assignment.mode = mode;
@@ -484,7 +602,7 @@ public class BulkDemoDataSeeder implements ApplicationRunner {
                 assignment.title = nextAssignmentTitle(mode, newAssignmentOrder, seed.course.name);
                 assignment.description = buildAssignmentDescription(seed.course.name, mode, status);
                 assignment.allowLate = resolveAllowLate(status, newAssignmentOrder);
-                assignment.deadline = buildDeadline(status, newAssignmentOrder);
+                assignment.deadline = buildDeadline(status, statusOrder);
                 int[] weightProfile = weightProfileFor(mode, newAssignmentOrder);
                 assignment.peerWeight = weightProfile[0];
                 assignment.teacherWeight = weightProfile[1];
@@ -502,6 +620,7 @@ public class BulkDemoDataSeeder implements ApplicationRunner {
                     studentReviewTargetFor(mode),
                     teacherReviewTargetFor(mode, seed.teacherIds.size())
                 ));
+                statusOrders.put(status, statusOrder + 1);
                 newAssignmentOrder++;
             }
         }
@@ -681,7 +800,10 @@ public class BulkDemoDataSeeder implements ApplicationRunner {
         LocalDateTime anchor = referenceTime();
         return switch (status) {
             case "SUBMITTING" -> {
-                long daysOffset = order < MIN_DUE_SOON_SUBMITTING_ASSIGNMENTS ? 1L + order % 3 : 4L + order % 11;
+                if (order < MIN_DUE_SOON_SUBMITTING_ASSIGNMENTS) {
+                    yield anchor.plusHours(18L + order * 9L).withMinute(0).withSecond(0).withNano(0);
+                }
+                long daysOffset = 4L + (order - MIN_DUE_SOON_SUBMITTING_ASSIGNMENTS) % 11;
                 yield anchor.plusDays(daysOffset).withHour(23).withMinute(59).withSecond(0).withNano(0);
             }
             case "REVIEWING" -> anchor.minusDays(2L + order % 5).withHour(23).withMinute(59).withSecond(0).withNano(0);

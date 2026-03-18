@@ -30,6 +30,7 @@ mybatis:
 
 demo:
   upload-dir: ${UPLOAD_DIR:uploads}
+  frontend-origins: ${FRONTEND_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
   token-prefix: ${TOKEN_PREFIX:course-platform-demo:token:}
   token-ttl-hours: ${TOKEN_TTL_HOURS:12}
   bulk-seed:
