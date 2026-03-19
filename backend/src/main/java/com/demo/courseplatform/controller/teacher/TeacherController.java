@@ -37,6 +37,13 @@ public class TeacherController {
         return ApiResponse.success(PageResult.of(demoPlatformService.getCoursesForUser(userId), pageNo, pageSize));
     }
 
+    @PostMapping("/courses")
+    public ApiResponse<DemoViews.CourseCardVo> createCourse(HttpServletRequest request,
+                                                            @Valid @RequestBody DemoRequests.CreateCourseRequest requestBody) {
+        Long userId = (Long) request.getAttribute("currentUserId");
+        return ApiResponse.success(demoPlatformService.createCourseAsTeacher(userId, requestBody));
+    }
+
     @GetMapping("/assignments/{assignmentId}")
     public ApiResponse<DemoViews.AssignmentDetailVo> getAssignment(HttpServletRequest request, @PathVariable Long assignmentId) {
         Long userId = (Long) request.getAttribute("currentUserId");
@@ -47,6 +54,13 @@ public class TeacherController {
     public ApiResponse<DemoViews.AssignmentGroupManageVo> getGroups(HttpServletRequest request, @PathVariable Long assignmentId) {
         Long userId = (Long) request.getAttribute("currentUserId");
         return ApiResponse.success(demoPlatformService.getAssignmentGroups(userId, assignmentId));
+    }
+
+    @PostMapping("/courses/{courseId}/assignments")
+    public ApiResponse<DemoViews.AssignmentDetailVo> createAssignment(HttpServletRequest request, @PathVariable Long courseId,
+                                                                      @Valid @RequestBody DemoRequests.CreateAssignmentRequest requestBody) {
+        Long userId = (Long) request.getAttribute("currentUserId");
+        return ApiResponse.success(demoPlatformService.createAssignmentAsTeacher(userId, courseId, requestBody));
     }
 
     @PostMapping("/assignments/{assignmentId}/groups")

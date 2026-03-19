@@ -20,6 +20,7 @@ class TeacherAbnormalGovernanceIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void shouldRecomputeSubmissionAbnormalitiesAfterThirdStudentReview() throws Exception {
+        setAssignmentDeadlineHoursFromNow(1001L, -2);
         jdbcTemplate.update("UPDATE sys_user SET first_login_reset_required = 0 WHERE id IN (3, 4, 9)");
         deleteStudentEvaluations(5003L);
 

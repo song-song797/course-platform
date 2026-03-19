@@ -783,7 +783,7 @@ public class BulkDemoDataSeeder implements ApplicationRunner {
         String statusLabel = switch (status) {
             case "SUBMITTING" -> "提交期";
             case "REVIEWING" -> "互评期";
-            case "CLOSED" -> "已发布最终成绩";
+            case "CLOSED" -> "已生成最终成绩";
             default -> status;
         };
         return "面向 " + courseName + " 的 " + modeLabel + " 任务，当前用于覆盖 " + statusLabel + "、排行榜、统计和治理联调场景。";

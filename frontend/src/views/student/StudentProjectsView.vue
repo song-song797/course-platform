@@ -105,14 +105,14 @@ watch(() => route.params.assignmentId, async (next, previous) => {
       <div class="page-hero__side">
         <span class="layout-chip">peer review</span>
         <h3>{{ assignment.resultsPublished ? '成绩已冻结' : '当前展示实时得分' }}</h3>
-        <p>教师发布最终成绩前，这里的项目分数与排行榜都会保持实时更新。</p>
+        <p>截止后学生互评会立即开放 24 小时，教师评分同步开放 48 小时；教师窗口结束后会自动冻结最终成绩。</p>
       </div>
     </section>
 
     <el-alert
       v-if="assignment"
       :title="assignment.displayStatus || assignment.status"
-      :description="assignment.resultsPublished ? '当前排行榜和项目得分已冻结为最终结果。' : '当前展示为实时成绩，教师发布后会冻结为最终成绩。'"
+      :description="assignment.resultsPublished ? '当前排行榜和项目得分已冻结为最终结果。' : '当前展示为实时成绩，教师评分窗口结束后会自动切换为最终成绩。'"
       :type="assignment.resultsPublished ? 'success' : (assignment.status === 'REVIEWING' ? 'warning' : 'info')"
       :closable="false"
       show-icon

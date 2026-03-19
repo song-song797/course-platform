@@ -16,20 +16,18 @@ class ResultsPublishingIntegrationTest extends AbstractIntegrationTest {
     private TokenService tokenService;
 
     @Test
-    void shouldHideFinalScoreBeforePublishAndFreezeAfterPublish() throws Exception {
+    void shouldFreezeScoresAutomaticallyAfterTeacherWindowEnds() throws Exception {
+        setAssignmentDeadlineHoursFromNow(1003L, -2);
+
         mockMvc.perform(get("/api/v1/student/assignments/1003/my-dashboard")
                 .header("Authorization", bearer(4L)))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data.summary.published").value(false))
             .andExpect(jsonPath("$.data.summary.finalScore").isEmpty())
             .andExpect(jsonPath("$.data.leaderboardType").value("REALTIME"))
-            .andExpect(jsonPath("$.data.displayStatus").value("互评中"));
+            .andExpect(jsonPath("$.data.displayStatus").value("学生互评与教师评分中"));
 
-        mockMvc.perform(patch("/api/v1/teacher/assignments/1003/publish-results")
-                .header("Authorization", bearer(2L)))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.data.published").value(true))
-            .andExpect(jsonPath("$.data.displayStatus").value("已发布最终成绩"));
+        setAssignmentDeadlineHoursFromNow(1003L, -50);
 
         mockMvc.perform(get("/api/v1/student/assignments/1003/my-dashboard")
                 .header("Authorization", bearer(4L)))
@@ -37,7 +35,7 @@ class ResultsPublishingIntegrationTest extends AbstractIntegrationTest {
             .andExpect(jsonPath("$.data.summary.published").value(true))
             .andExpect(jsonPath("$.data.summary.finalScore").isNumber())
             .andExpect(jsonPath("$.data.leaderboardType").value("FINAL"))
-            .andExpect(jsonPath("$.data.displayStatus").value("已发布最终成绩"));
+            .andExpect(jsonPath("$.data.displayStatus").value("最终成绩已生成"));
 
         mockMvc.perform(get("/api/v1/teacher/assignments/1003/stats")
                 .header("Authorization", bearer(2L)))
@@ -47,10 +45,13 @@ class ResultsPublishingIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void shouldRejectTeacherScoreChangeAfterPublish() throws Exception {
+    void shouldRejectManualPublishAndTeacherReviewAfterAutomaticFinalization() throws Exception {
+        setAssignmentDeadlineHoursFromNow(1003L, -50);
+
         mockMvc.perform(patch("/api/v1/teacher/assignments/1003/publish-results")
                 .header("Authorization", bearer(2L)))
-            .andExpect(status().isOk());
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.code").value(4090));
 
         mockMvc.perform(patch("/api/v1/teacher/evaluations/8021/review")
                 .header("Authorization", bearer(2L))

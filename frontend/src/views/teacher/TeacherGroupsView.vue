@@ -117,13 +117,13 @@ onMounted(loadData)
       <div class="page-hero__side">
         <span class="layout-chip">ungrouped</span>
         <h3>{{ manage.ungroupedStudents?.length || 0 }} 人待分组</h3>
-        <p>{{ manage.resultsPublished ? '最终成绩已发布，当前页面只读。' : '先完成小组关系维护，再让学生进入稳定的提交与互评流程。' }}</p>
+        <p>{{ manage.resultsPublished ? '最终成绩已生成，当前页面只读。' : '先完成小组关系维护，再让学生进入稳定的提交与互评流程。' }}</p>
       </div>
     </section>
 
     <el-alert
       :title="manage.displayStatus || manage.assignmentStatus"
-      :description="manage.resultsPublished ? `最终成绩已发布${manage.resultsPublishedAt ? `：${manage.resultsPublishedAt}` : ''}，当前页面只读。` : '教师可在这里维护真实小组关系；已有提交的小组仅允许改组名。'"
+      :description="manage.resultsPublished ? `最终成绩已生成${manage.resultsPublishedAt ? `：${manage.resultsPublishedAt}` : ''}，当前页面只读。` : '教师可在这里维护真实小组关系；已有提交的小组仅允许改组名。'"
       :type="manage.resultsPublished ? 'success' : 'info'"
       :closable="false"
       show-icon

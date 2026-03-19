@@ -1,6 +1,7 @@
 package com.demo.courseplatform;
 
 import javax.sql.DataSource;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,5 +60,13 @@ public abstract class AbstractIntegrationTest {
         if (tokenKeys != null && !tokenKeys.isEmpty()) {
             stringRedisTemplate.delete(tokenKeys);
         }
+    }
+
+    protected void setAssignmentDeadlineHoursFromNow(long assignmentId, long hoursOffset) {
+        jdbcTemplate.update(
+            "UPDATE assignment SET deadline = ?, results_published = 0, results_published_at = NULL, status = 'SUBMITTING' WHERE id = ?",
+            LocalDateTime.now().plusHours(hoursOffset),
+            assignmentId
+        );
     }
 }

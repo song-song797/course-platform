@@ -16,6 +16,8 @@ class StudentDashboardIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void shouldReturnEmptyDashboardWhenStudentHasNotSubmittedYet() throws Exception {
+        setAssignmentDeadlineHoursFromNow(1002L, 24);
+
         mockMvc.perform(get("/api/v1/student/assignments/1002/my-dashboard")
                 .header("Authorization", bearer(4L)))
             .andExpect(status().isOk())

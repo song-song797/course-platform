@@ -13,7 +13,8 @@ public final class DemoViews {
     public record LoginVo(String token, UserProfileVo user) {
     }
 
-    public record CourseCardVo(Long id, String code, String name, String term, String roleInCourse, int assignmentCount,
+    public record CourseCardVo(Long id, String code, String name, String term, String courseDeadline,
+                               String roleInCourse, int assignmentCount,
                                List<AssignmentSummaryVo> assignments) {
     }
 

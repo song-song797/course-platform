@@ -38,7 +38,7 @@ class IndividualAssignmentWorkflowIntegrationTest extends AbstractIntegrationTes
             Long.class
         );
 
-        jdbcTemplate.update("UPDATE assignment SET status = 'REVIEWING' WHERE id = 1002");
+        setAssignmentDeadlineHoursFromNow(1002L, -2);
 
         mockMvc.perform(post("/api/v1/teacher/submissions/" + submissionId + "/scores")
                 .header("Authorization", bearer(2L))
@@ -57,10 +57,7 @@ class IndividualAssignmentWorkflowIntegrationTest extends AbstractIntegrationTes
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data.saved").value(true));
 
-        mockMvc.perform(patch("/api/v1/teacher/assignments/1002/publish-results")
-                .header("Authorization", bearer(2L)))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.data.published").value(true));
+        setAssignmentDeadlineHoursFromNow(1002L, -50);
 
         mockMvc.perform(get("/api/v1/student/assignments/1002/my-dashboard")
                 .header("Authorization", bearer(4L)))
@@ -72,7 +69,7 @@ class IndividualAssignmentWorkflowIntegrationTest extends AbstractIntegrationTes
             .andExpect(jsonPath("$.data.submission.members.length()").value(1))
             .andExpect(jsonPath("$.data.submission.members[0].id").value(4))
             .andExpect(jsonPath("$.data.leaderboardType").value("FINAL"))
-            .andExpect(jsonPath("$.data.displayStatus").value("已发布最终成绩"));
+            .andExpect(jsonPath("$.data.displayStatus").value("最终成绩已生成"));
     }
 
     private String bearer(Long userId) {

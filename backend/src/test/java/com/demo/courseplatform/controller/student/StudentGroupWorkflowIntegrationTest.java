@@ -17,7 +17,7 @@ class StudentGroupWorkflowIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void shouldRejectGroupSubmissionForUngroupedStudent() throws Exception {
-        jdbcTemplate.update("UPDATE assignment SET status = 'SUBMITTING' WHERE id = 1001");
+        setAssignmentDeadlineHoursFromNow(1001L, 24);
 
         mockMvc.perform(post("/api/v1/student/assignments/1001/submit")
                 .header("Authorization", bearer(10L))
@@ -35,7 +35,7 @@ class StudentGroupWorkflowIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void shouldIgnoreForgedMemberListAndBindSubmissionToRealGroup() throws Exception {
-        jdbcTemplate.update("UPDATE assignment SET status = 'SUBMITTING' WHERE id = 1001");
+        setAssignmentDeadlineHoursFromNow(1001L, 24);
 
         mockMvc.perform(post("/api/v1/student/assignments/1001/submit")
                 .header("Authorization", bearer(4L))
@@ -74,6 +74,8 @@ class StudentGroupWorkflowIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void shouldAllowUngroupedStudentToEvaluateOtherGroups() throws Exception {
+        setAssignmentDeadlineHoursFromNow(1001L, -2);
+
         mockMvc.perform(post("/api/v1/student/projects/5002/evaluations")
                 .header("Authorization", bearer(10L))
                 .contentType(MediaType.APPLICATION_JSON)

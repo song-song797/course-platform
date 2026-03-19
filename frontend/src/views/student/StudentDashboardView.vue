@@ -25,7 +25,7 @@ const statusTags = computed(() => {
   return [
     { label: `作业状态：${dashboard.value.displayStatus || dashboard.value.assignmentStatus}`, type: dashboard.value.leaderboardType === 'FINAL' ? 'success' : 'info' },
     { label: `榜单类型：${leaderboardTypeLabel.value}`, type: dashboard.value.leaderboardType === 'FINAL' ? 'success' : 'warning' },
-    { label: summary.value.published ? '最终成绩已发布' : '最终成绩未发布', type: summary.value.published ? 'success' : 'warning' },
+    { label: summary.value.published ? '最终成绩已生成' : '最终成绩未生成', type: summary.value.published ? 'success' : 'warning' },
   ]
 })
 const dimensionCards = computed(() => summary.value.dimensionAverages || [])
@@ -77,7 +77,7 @@ watch(
       <div class="page-hero__side">
         <span class="layout-chip">current rank</span>
         <h3>{{ summary.currentRank ? `#${summary.currentRank}` : '--' }}</h3>
-        <p>{{ summary.published ? '最终成绩已发布，可查看冻结后的排名与结果。' : '当前仍处于实时成绩阶段，教师发布后会更新最终结果。' }}</p>
+        <p>{{ summary.published ? '最终成绩已生成，可查看冻结后的排名与结果。' : '当前仍处于实时成绩阶段，教师评分窗口结束后会自动生成最终结果。' }}</p>
       </div>
     </section>
 
@@ -92,7 +92,7 @@ watch(
 
     <el-alert
       :title="dashboard.displayStatus || dashboard.assignmentStatus"
-      :description="summary.published ? `最终成绩已发布${summary.publishedAt ? `：${summary.publishedAt}` : ''}` : '当前仅展示实时成绩，教师发布后会显示最终成绩并冻结排行榜。'"
+      :description="summary.published ? `最终成绩已生成${summary.publishedAt ? `：${summary.publishedAt}` : ''}` : '当前仅展示实时成绩，教师评分窗口结束后会自动冻结排行榜并显示最终成绩。'"
       :type="summary.published ? 'success' : (dashboard.assignmentStatus === 'REVIEWING' ? 'warning' : 'info')"
       :closable="false"
       show-icon
@@ -103,7 +103,7 @@ watch(
       <div class="metric-card"><span class="muted">学生互评分</span><strong>{{ hasSubmission ? (summary.peerScore ?? '--') : '待提交' }}</strong></div>
       <div class="metric-card"><span class="muted">教师评分</span><strong>{{ hasSubmission ? (summary.teacherScore ?? '--') : '待提交' }}</strong></div>
       <div class="metric-card"><span class="muted">实时综合分</span><strong>{{ hasSubmission ? (summary.realtimeFinalScore ?? '--') : '待提交' }}</strong></div>
-      <div class="metric-card"><span class="muted">最终得分</span><strong>{{ !hasSubmission ? '待提交' : (summary.published ? (summary.finalScore ?? '--') : '未发布') }}</strong></div>
+      <div class="metric-card"><span class="muted">最终得分</span><strong>{{ !hasSubmission ? '待提交' : (summary.published ? (summary.finalScore ?? '--') : '未生成') }}</strong></div>
       <div class="metric-card"><span class="muted">当前排名</span><strong>{{ summary.currentRank ? `#${summary.currentRank}` : '--' }}</strong></div>
       <div class="metric-card"><span class="muted">总项目数</span><strong>{{ summary.totalProjects ?? 0 }}</strong></div>
     </div>

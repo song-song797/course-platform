@@ -1,13 +1,12 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import {
   addBlacklist,
   createTeacherScore,
   getTeacherAssignment,
   getTeacherEvaluations,
-  publishResults,
   getTeacherSubmissions,
   reviewEvaluation,
 } from '../../api/teacher'
@@ -22,7 +21,6 @@ const scoreDialogVisible = ref(false)
 const blacklistDialogVisible = ref(false)
 const blacklistTarget = ref(null)
 const blacklistEvaluatorUserId = ref(null)
-const publishing = ref(false)
 const loadingEvaluations = ref(false)
 const form = reactive({ itemScores: [], overallComment: '' })
 const filters = reactive({
@@ -155,21 +153,6 @@ async function handleExclude(evaluation, excluded = true) {
   await loadEvaluations(evaluations.value.pageNo)
 }
 
-async function handlePublish() {
-  await ElMessageBox.confirm('发布后学生端将看到最终成绩，排行榜也会冻结为最终榜。确认发布吗？', '发布最终成绩', {
-    type: 'warning',
-    confirmButtonText: '确认发布',
-  })
-  publishing.value = true
-  try {
-    await publishResults(route.params.assignmentId)
-    ElMessage.success('最终成绩已发布')
-    await loadData()
-  } finally {
-    publishing.value = false
-  }
-}
-
 function handleFilter() {
   void loadEvaluations(1)
 }
@@ -217,7 +200,7 @@ watch(
         <span class="page-hero__eyebrow">review records</span>
         <h1 class="page-hero__title">Review submissions, score with rubric and govern abnormal evaluations from one page</h1>
         <p class="page-hero__description">
-          提交列表、教师评分、异常评分治理和结果发布都围绕当前作业展开，避免在多页面之间频繁切换。
+          提交列表、教师评分和异常评分治理都围绕当前作业展开。最终成绩会在教师评分窗口结束后自动生成。
         </p>
         <div class="page-hero__meta">
           <span>{{ assignment.title }}</span>
@@ -228,22 +211,19 @@ watch(
           <el-button v-if="assignment.mode === 'GROUP'" type="warning" @click="router.push(`/teacher/assignments/${route.params.assignmentId}/groups`)">小组管理</el-button>
           <el-button :disabled="assignment.resultsPublished" @click="router.push(`/teacher/assignments/${route.params.assignmentId}/rubric`)">编辑 Rubric</el-button>
           <el-button type="primary" @click="router.push(`/teacher/assignments/${route.params.assignmentId}/stats`)">查看统计</el-button>
-          <el-button type="success" :disabled="assignment.resultsPublished" :loading="publishing" @click="handlePublish">
-            {{ assignment.resultsPublished ? '最终成绩已发布' : '发布最终成绩' }}
-          </el-button>
         </div>
       </div>
 
       <div class="page-hero__side">
         <span class="layout-chip">submission count</span>
         <h3>{{ submissions.total }}</h3>
-        <p>{{ assignment.resultsPublished ? '当前页面进入只读状态。' : '异常评分会被标记，但只有教师明确忽略后才会退出聚合。' }}</p>
+        <p>{{ assignment.resultsPublished ? '教师评分已结束，当前页面进入只读状态。' : '异常评分会被标记，但只有教师明确忽略后才会退出聚合。' }}</p>
       </div>
     </section>
 
     <el-alert
       :title="assignment.displayStatus || assignment.status"
-      :description="assignment.resultsPublished ? `最终成绩已发布${assignment.resultsPublishedAt ? `：${assignment.resultsPublishedAt}` : ''}，当前页面进入只读状态。` : '系统会自动标记异常评分，但只有教师明确执行“忽略该评分”后，该评分才不参与计分。恢复后会重新参与成绩聚合。'"
+      :description="assignment.resultsPublished ? `最终成绩已生成${assignment.resultsPublishedAt ? `：${assignment.resultsPublishedAt}` : ''}，当前页面进入只读状态。` : '学生互评在截止后立即开放 24 小时，教师评分同步开放 48 小时。教师窗口结束后系统会自动冻结最终成绩。'"
       :type="assignment.resultsPublished ? 'success' : (assignment.status === 'REVIEWING' ? 'warning' : 'info')"
       :closable="false"
       show-icon

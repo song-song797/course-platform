@@ -1,8 +1,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { getTeacherCourses, getTeacherStats, publishResults } from '../../api/teacher'
+import { getTeacherCourses, getTeacherStats } from '../../api/teacher'
 import SimpleBarChart from '../../components/charts/SimpleBarChart.vue'
 
 const route = useRoute()
@@ -11,8 +10,6 @@ const stats = ref(null)
 const teacherCourses = ref([])
 const selectedCourseId = ref(null)
 const selectedAssignmentId = ref(null)
-const publishing = ref(false)
-
 const selectedCourse = computed(() => teacherCourses.value.find((item) => item.id === selectedCourseId.value) || null)
 const assignmentOptions = computed(() => selectedCourse.value?.assignments || [])
 
@@ -35,21 +32,6 @@ function handleCourseChange(courseId) {
 function handleAssignmentChange(assignmentId) {
   if (assignmentId) {
     router.push(`/teacher/assignments/${assignmentId}/stats`)
-  }
-}
-
-async function handlePublish() {
-  await ElMessageBox.confirm('发布后学生端将看到最终成绩，排行榜也会冻结为最终榜。确认发布吗？', '发布最终成绩', {
-    type: 'warning',
-    confirmButtonText: '确认发布',
-  })
-  publishing.value = true
-  try {
-    await publishResults(route.params.assignmentId)
-    ElMessage.success('最终成绩已发布')
-    await loadData()
-  } finally {
-    publishing.value = false
   }
 }
 
@@ -78,7 +60,7 @@ watch(() => route.params.assignmentId, async (next, previous) => {
         <span class="page-hero__eyebrow">analytics</span>
         <h1 class="page-hero__title">Read score distribution, leaderboard changes and abnormal review impact in one analytics view</h1>
         <p class="page-hero__description">
-          统计页会把提交量、评分完成率、异常评分处理和最终成绩发布影响汇总成一套教学分析面板。
+          统计页会把提交量、评分完成率、异常评分处理和自动出分影响汇总成一套教学分析面板。
         </p>
         <div class="page-hero__meta">
           <span>{{ stats.courseName }}</span>
@@ -89,8 +71,8 @@ watch(() => route.params.assignmentId, async (next, previous) => {
 
       <div class="page-hero__side">
         <span class="layout-chip">publish status</span>
-        <h3>{{ stats.resultsPublished ? '已发布' : '未发布' }}</h3>
-        <p>{{ stats.resultsPublished ? '学生端已看到最终成绩，排行榜也已冻结。' : '只有在教师确认发布后，学生端才会看到最终结果。' }}</p>
+        <h3>{{ stats.resultsPublished ? '已出最终分' : '评分进行中' }}</h3>
+        <p>{{ stats.resultsPublished ? '学生端已看到最终成绩，排行榜也已冻结。' : '截止后学生互评立即开放 24 小时，教师评分同步开放 48 小时。' }}</p>
       </div>
     </section>
 
@@ -101,13 +83,12 @@ watch(() => route.params.assignmentId, async (next, previous) => {
       <el-select v-model="selectedAssignmentId" style="width: 260px;" @change="handleAssignmentChange">
         <el-option v-for="assignment in assignmentOptions" :key="assignment.id" :label="`${assignment.title} · ${assignment.displayStatus || assignment.status}`" :value="assignment.id" />
       </el-select>
-      <el-button type="primary" :disabled="stats.resultsPublished" :loading="publishing" @click="handlePublish">{{ stats.resultsPublished ? '最终成绩已发布' : '发布最终成绩' }}</el-button>
       <el-button type="warning" @click="goToAbnormalReview">查看异常评分治理</el-button>
     </div>
 
     <el-alert
       :title="stats.displayStatus || stats.assignmentStatus"
-      :description="stats.resultsPublished ? `最终成绩已发布${stats.resultsPublishedAt ? `：${stats.resultsPublishedAt}` : ''}` : '自动标记异常评分不会直接改变成绩；只有教师明确忽略后，该评分才会退出聚合。'"
+      :description="stats.resultsPublished ? `最终成绩已生成${stats.resultsPublishedAt ? `：${stats.resultsPublishedAt}` : ''}` : '自动标记异常评分不会直接改变成绩；只有教师明确忽略后，该评分才会退出聚合。教师评分窗口结束后系统会自动冻结最终榜。'"
       :type="stats.resultsPublished ? 'success' : (stats.assignmentStatus === 'REVIEWING' ? 'warning' : 'info')"
       :closable="false"
       show-icon

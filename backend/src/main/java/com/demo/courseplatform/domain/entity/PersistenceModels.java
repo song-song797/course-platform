@@ -23,6 +23,7 @@ public final class PersistenceModels {
         public String code;
         public String name;
         public String term;
+        public LocalDateTime courseDeadline;
     }
 
     public static class CourseMemberEntity {

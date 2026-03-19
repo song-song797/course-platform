@@ -30,7 +30,7 @@ function handleRemoveItem(index) {
 
 async function handleSave() {
   if (readonly.value) {
-    ElMessage.warning('最终成绩已发布，Rubric 已锁定为只读')
+    ElMessage.warning('最终成绩已生成，Rubric 已锁定为只读')
     return
   }
   if (totalWeight.value !== 100) {
@@ -51,7 +51,7 @@ async function handleSave() {
         <span class="page-hero__eyebrow">rubric editor</span>
         <h1 class="page-hero__title">Shape the scoring dimensions before evaluation records are finalized</h1>
         <p class="page-hero__description">
-          Rubric 会直接影响实时分与最终分的计算结果。请在成绩发布前完成评分项、说明和权重配置。
+          Rubric 会直接影响实时分与最终分的计算结果。请在教师评分窗口结束前完成评分项、说明和权重配置。
         </p>
         <div class="page-hero__meta">
           <span>{{ assignment.title }}</span>
@@ -67,13 +67,13 @@ async function handleSave() {
       <div class="page-hero__side">
         <span class="layout-chip">assignment status</span>
         <h3>{{ assignment.displayStatus || assignment.status }}</h3>
-        <p>{{ readonly ? '最终成绩已发布，Rubric 已锁定。' : '发布前仍可继续调整维度和权重。' }}</p>
+        <p>{{ readonly ? '最终成绩已生成，Rubric 已锁定。' : '教师评分窗口结束前仍可继续调整维度和权重。' }}</p>
       </div>
     </section>
 
     <el-alert
       :title="assignment.displayStatus || assignment.status"
-      :description="readonly ? `最终成绩已发布${assignment.resultsPublishedAt ? `：${assignment.resultsPublishedAt}` : ''}，Rubric 已锁定。` : 'Rubric 会直接影响实时分和最终分计算，请在发布前完成调整。'"
+      :description="readonly ? `最终成绩已生成${assignment.resultsPublishedAt ? `：${assignment.resultsPublishedAt}` : ''}，Rubric 已锁定。` : 'Rubric 会直接影响实时分和最终分计算，请在教师评分窗口结束前完成调整。'"
       :type="readonly ? 'success' : 'warning'"
       :closable="false"
       show-icon

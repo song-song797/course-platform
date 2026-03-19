@@ -37,14 +37,14 @@ onMounted(async () => {
       <div class="page-hero__side">
         <span class="layout-chip">status</span>
         <h3>{{ assignment.displayStatus || assignment.status }}</h3>
-        <p>互评分 {{ assignment.peerWeight }}%，教师评分 {{ assignment.teacherWeight }}%，结果发布后会冻结最终成绩。</p>
+        <p>互评分 {{ assignment.peerWeight }}%，教师评分 {{ assignment.teacherWeight }}%，作业截止后会立即开放评分窗口并在教师评分结束后自动冻结最终成绩。</p>
       </div>
     </section>
 
     <div class="stack">
       <el-alert
         :title="assignment.displayStatus || assignment.status"
-        :description="assignment.resultsPublished ? `最终成绩已发布${assignment.resultsPublishedAt ? `：${assignment.resultsPublishedAt}` : ''}` : '当前阶段请以实时成绩和实时榜单为准。'"
+        :description="assignment.resultsPublished ? `最终成绩已生成${assignment.resultsPublishedAt ? `：${assignment.resultsPublishedAt}` : ''}` : '当前阶段请以实时成绩和实时榜单为准；截止后学生互评会立即开放 24 小时，教师评分同步开放 48 小时。'"
         :type="assignment.resultsPublished ? 'success' : (assignment.status === 'REVIEWING' ? 'warning' : 'info')"
         :closable="false"
         show-icon

@@ -12,8 +12,25 @@ CREATE TABLE IF NOT EXISTS course (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     code VARCHAR(64) NOT NULL UNIQUE,
     name VARCHAR(128) NOT NULL,
-    term VARCHAR(32) NOT NULL
+    term VARCHAR(32) NOT NULL,
+    course_deadline DATETIME NULL
 );
+
+SET @course_deadline_exists = (
+    SELECT COUNT(*)
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'course'
+      AND column_name = 'course_deadline'
+);
+SET @course_deadline_sql = IF(
+    @course_deadline_exists = 0,
+    'ALTER TABLE course ADD COLUMN course_deadline DATETIME NULL',
+    'SELECT 1'
+);
+PREPARE stmt FROM @course_deadline_sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 CREATE TABLE IF NOT EXISTS course_member (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
