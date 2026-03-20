@@ -438,7 +438,7 @@ public class DemoPlatformService {
         assignment.courseId = courseId;
         assignment.title = request.title().trim();
         assignment.mode = normalizeMode(request.mode());
-        assignment.description = blankToDefault(request.description(), "课程项目 demo 作业");
+        assignment.description = blankToDefault(request.description(), "课程项目评分作业");
         assignment.deadline = parseDeadline(request.deadline(), LocalDateTime.now().plusDays(5));
         assignment.allowLate = request.allowLate();
         assignment.peerWeight = request.peerWeight();

@@ -96,45 +96,49 @@ onMounted(loadData)
 
 <template>
   <div class="page-shell" v-if="manage">
-    <section class="page-hero">
-      <div class="page-hero__card">
-        <span class="page-hero__eyebrow">group management</span>
-        <h1 class="page-hero__title">Build and maintain course groups before students move into review</h1>
-        <p class="page-hero__description">
-          教师可以在这里组织真实小组关系。已有提交或评分记录的小组会锁定成员，只允许继续修改组名。
+    <section class="page-head">
+      <div class="page-head__main">
+        <span class="page-head__eyebrow">小组管理</span>
+        <h2 class="page-head__title">在互评前维护课程小组关系</h2>
+        <p class="page-head__description">
+          教师可以在这里组织真实小组关系。已经产生提交或评分记录的小组会锁定成员，只允许继续修改组名。
         </p>
-        <div class="page-hero__meta">
+        <div class="page-head__stats">
           <span>{{ manage.assignmentTitle }}</span>
           <span>{{ manage.displayStatus || manage.assignmentStatus }}</span>
           <span>{{ manage.groups.length }} 个小组</span>
         </div>
-        <div class="page-hero__actions">
+        <div class="page-head__actions">
           <el-button @click="router.push(`/teacher/assignments/${route.params.assignmentId}/review`)">返回评分页</el-button>
           <el-button type="primary" :disabled="!canCreateGroup" @click="openCreateDialog">新建小组</el-button>
         </div>
       </div>
 
-      <div class="page-hero__side">
-        <span class="layout-chip">ungrouped</span>
-        <h3>{{ manage.ungroupedStudents?.length || 0 }} 人待分组</h3>
-        <p>{{ manage.resultsPublished ? '最终成绩已发布，当前页面只读。' : '先完成小组关系维护，再让学生进入稳定的提交与互评流程。' }}</p>
+      <div class="page-head__aside">
+        <span class="layout-chip">待分组学生</span>
+        <h3>{{ manage.ungroupedStudents?.length || 0 }} 人</h3>
+        <p>{{ manage.resultsPublished ? '最终成绩已发布，当前页面只读。' : '先维护小组关系，再让学生进入稳定的提交与互评流程。' }}</p>
       </div>
     </section>
 
     <el-alert
       :title="manage.displayStatus || manage.assignmentStatus"
-      :description="manage.resultsPublished ? `最终成绩已发布${manage.resultsPublishedAt ? `：${manage.resultsPublishedAt}` : ''}，当前页面只读。` : '教师可在这里维护真实小组关系；已有提交的小组仅允许改组名。'"
+      :description="manage.resultsPublished ? `最终成绩已发布${manage.resultsPublishedAt ? `：${manage.resultsPublishedAt}` : ''}，当前页面只读。` : '教师可以在这里维护真实小组关系；已经产生提交记录的小组只允许修改组名。'"
       :type="manage.resultsPublished ? 'success' : 'info'"
       :closable="false"
       show-icon
-      style="margin-bottom: 20px;"
     />
 
-    <div class="split-grid">
-      <div class="section-card section-card--accent">
-        <span class="section-eyebrow">group list</span>
-        <h3>小组列表</h3>
-        <div style="margin-top: 18px;">
+    <div class="content-grid">
+      <section class="section-card section-card--accent">
+        <div class="panel-header">
+          <div>
+            <span class="section-eyebrow">小组列表</span>
+            <h3 style="margin-top: 14px;">当前分组情况</h3>
+          </div>
+          <span class="layout-chip">{{ manage.groups.length }} 组</span>
+        </div>
+        <div class="data-table-wrap" style="margin-top: 18px;">
           <el-table :data="manage.groups">
             <el-table-column prop="groupName" label="小组名称" min-width="180" />
             <el-table-column label="组员" min-width="220">
@@ -151,7 +155,7 @@ onMounted(loadData)
             </el-table-column>
             <el-table-column label="状态" width="140">
               <template #default="{ row }">
-                <el-tag v-if="row.memberLocked" type="warning">成员已冻结</el-tag>
+                <el-tag v-if="row.memberLocked" type="warning">成员已锁定</el-tag>
                 <span v-else class="muted">可调整</span>
               </template>
             </el-table-column>
@@ -163,26 +167,43 @@ onMounted(loadData)
             </el-table-column>
           </el-table>
         </div>
-      </div>
+      </section>
 
-      <div class="section-card">
-        <span class="section-eyebrow">ungrouped</span>
-        <h3>未分组学生</h3>
-        <div style="margin-top: 18px;">
-          <el-table :data="manage.ungroupedStudents" size="small">
-            <el-table-column prop="name" label="姓名" />
-            <el-table-column prop="username" label="账号" width="140" />
-          </el-table>
+      <div class="stack">
+        <section class="section-card">
+          <span class="section-eyebrow">未分组学生</span>
+          <h3 style="margin-top: 14px;">待处理名单</h3>
+          <div class="data-table-wrap" style="margin-top: 18px;">
+            <el-table :data="manage.ungroupedStudents" size="small">
+              <el-table-column prop="name" label="姓名" />
+              <el-table-column prop="username" label="账号" width="140" />
+            </el-table>
+          </div>
           <el-empty v-if="!manage.ungroupedStudents.length" description="当前没有未分组学生" :image-size="72" />
-        </div>
+        </section>
+
+        <section class="section-card">
+          <span class="section-eyebrow">使用提示</span>
+          <h3 style="margin-top: 14px;">分组建议</h3>
+          <div class="stack" style="margin-top: 18px; gap: 16px;">
+            <div class="mini-card">
+              <strong>提交前尽量稳定成员</strong>
+              <p class="section-subtitle">一旦小组开始提交或参与评分，就不建议再调整组员，避免数据归属混乱。</p>
+            </div>
+            <div class="mini-card">
+              <strong>锁定后只改组名</strong>
+              <p class="section-subtitle">系统会自动限制成员调整，但仍允许修正组名或展示名称。</p>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
 
     <el-dialog v-model="dialogVisible" :title="dialogTitle" width="640px">
       <div class="dialog-content">
         <div class="section-card">
-          <span class="section-eyebrow">group editor</span>
-          <h3>{{ dialogTitle }}</h3>
+          <span class="section-eyebrow">小组编辑器</span>
+          <h3 style="margin-top: 14px;">{{ dialogTitle }}</h3>
           <el-form label-position="top" style="margin-top: 18px;">
             <el-form-item label="小组名称">
               <el-input v-model="form.groupName" :disabled="isReadonly" />
@@ -199,7 +220,7 @@ onMounted(loadData)
             </el-form-item>
             <el-alert
               v-if="editingGroup?.memberLocked"
-              title="该小组已有提交或评分记录，当前只能修改组名，不能调整组员。"
+              title="该小组已经有提交或评分记录，当前只能修改组名，不能调整组员。"
               type="warning"
               :closable="false"
               show-icon

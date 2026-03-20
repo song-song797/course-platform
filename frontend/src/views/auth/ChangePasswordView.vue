@@ -17,105 +17,89 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <div class="change-password-page">
-    <div class="change-password-page__glow"></div>
-    <div class="change-password-shell">
-      <section class="change-password-hero">
-        <span class="page-hero__eyebrow">first login</span>
-        <h1>Set a secure password before entering your learning workspace</h1>
-        <p>
-          完成首次改密后，系统会自动跳转到你的角色工作台。建议设置一个容易记住但更安全的密码，
-          这样后续提交、评分和查看结果时会更顺畅。
+  <div class="auth-page">
+    <section class="auth-shell auth-shell--password">
+      <div class="auth-panel auth-panel--hero">
+        <span class="page-head__eyebrow">首次登录</span>
+        <h1 class="page-head__title">先完成安全设置，再进入你的课程工作台</h1>
+        <p class="page-head__description">
+          完成首次改密后，系统会自动跳转到当前角色的工作台。
+          建议设置一个容易记住但更安全的密码，后续提交、评分和查看结果都会更顺畅。
         </p>
 
-        <div class="page-hero__meta">
+        <div class="page-head__stats">
           <span>首次登录必做</span>
-          <span>完成后自动跳转</span>
-          <span>适用于所有角色</span>
+          <span>修改后自动跳转</span>
+          <span>适用于全部角色</span>
         </div>
-      </section>
+      </div>
 
-      <el-card class="change-password-card">
-        <template #header>
-          <div class="stack" style="gap: 6px;">
-            <span class="section-eyebrow">security</span>
-            <strong>首次登录修改密码</strong>
+      <div class="auth-panel auth-panel--form">
+        <div class="panel-header">
+          <div>
+            <span class="section-eyebrow">安全设置</span>
+            <h3 style="margin-top: 14px;">修改登录密码</h3>
           </div>
-        </template>
-        <el-form :model="form" label-position="top">
+        </div>
+
+        <p class="section-subtitle" style="margin-top: 12px;">
+          修改完成后即可继续进入课程项目评分平台。
+        </p>
+
+        <el-form :model="form" label-position="top" style="margin-top: 20px;">
           <el-form-item label="新密码">
-            <el-input v-model="form.newPassword" type="password" show-password />
+            <el-input v-model="form.newPassword" type="password" show-password @keyup.enter="handleSubmit" />
           </el-form-item>
-          <el-button type="primary" @click="handleSubmit">确认修改</el-button>
+          <el-button type="primary" style="width: 100%;" @click="handleSubmit">确认修改</el-button>
         </el-form>
-      </el-card>
-    </div>
+      </div>
+    </section>
   </div>
 </template>
 
 <style scoped>
-.change-password-page {
+.auth-page {
   min-height: 100vh;
-  position: relative;
-  overflow: hidden;
+  padding: 28px;
   background:
-    radial-gradient(circle at top left, rgba(255, 191, 112, 0.18) 0%, rgba(255, 191, 112, 0) 22%),
-    linear-gradient(180deg, #fffaf3 0%, #fff7ec 100%);
+    radial-gradient(circle at top left, rgba(96, 159, 255, 0.16) 0%, rgba(96, 159, 255, 0) 24%),
+    linear-gradient(180deg, #f5f8fe 0%, #eef3fb 100%);
 }
 
-.change-password-page__glow {
-  position: absolute;
-  width: 360px;
-  height: 360px;
-  top: -120px;
-  right: -100px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 201, 127, 0.24) 0%, rgba(255, 201, 127, 0) 70%);
-}
-
-.change-password-shell {
-  width: min(1080px, calc(100vw - 56px));
+.auth-shell {
+  width: min(1280px, 100%);
   margin: 0 auto;
-  min-height: 100vh;
+  min-height: calc(100vh - 56px);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 380px;
-  gap: 28px;
+  grid-template-columns: minmax(0, 1.25fr) 420px;
+  gap: 24px;
+}
+
+.auth-shell--password {
+  grid-template-columns: minmax(0, 1fr) 400px;
   align-items: center;
 }
 
-.change-password-hero {
-  padding: 36px;
+.auth-panel {
   border-radius: var(--radius-xl);
-  background:
-    radial-gradient(circle at top right, rgba(255, 213, 154, 0.28) 0%, rgba(255, 213, 154, 0) 28%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.84) 0%, rgba(255, 247, 233, 0.9) 100%);
   border: 1px solid var(--surface-border);
+  background: var(--surface);
   box-shadow: var(--shadow-card);
 }
 
-.change-password-hero h1 {
-  margin: 18px 0 0;
-  max-width: 560px;
-  font-size: 48px;
-  line-height: 1.06;
-  letter-spacing: -0.04em;
+.auth-panel--hero {
+  padding: 32px;
 }
 
-.change-password-hero p {
-  margin: 16px 0 0;
-  max-width: 560px;
-  color: var(--text-body);
-  line-height: 1.8;
+.auth-panel--form {
+  padding: 30px;
+  align-self: center;
 }
 
-.change-password-card {
-  border-radius: var(--radius-xl);
-}
-
-@media (max-width: 980px) {
-  .change-password-shell {
+@media (max-width: 1080px) {
+  .auth-shell,
+  .auth-shell--password {
     grid-template-columns: 1fr;
-    padding: 32px 0;
   }
 }
 </style>

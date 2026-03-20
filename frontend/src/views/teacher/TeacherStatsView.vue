@@ -39,7 +39,7 @@ function handleAssignmentChange(assignmentId) {
 }
 
 async function handlePublish() {
-  await ElMessageBox.confirm('发布后学生端将看到最终成绩，排行榜也会冻结为最终榜。确认发布吗？', '发布最终成绩', {
+  await ElMessageBox.confirm('发布后学生端会看到最终成绩，排行榜也会冻结为最终榜。确认发布吗？', '发布最终成绩', {
     type: 'warning',
     confirmButtonText: '确认发布',
   })
@@ -73,84 +73,113 @@ watch(() => route.params.assignmentId, async (next, previous) => {
 
 <template>
   <div class="page-shell" v-if="stats">
-    <section class="page-hero">
-      <div class="page-hero__card">
-        <span class="page-hero__eyebrow">analytics</span>
-        <h1 class="page-hero__title">Read score distribution, leaderboard changes and abnormal review impact in one analytics view</h1>
-        <p class="page-hero__description">
-          统计页会把提交量、评分完成率、异常评分处理和最终成绩发布影响汇总成一套教学分析面板。
+    <section class="page-head">
+      <div class="page-head__main">
+        <span class="page-head__eyebrow">统计分析</span>
+        <h2 class="page-head__title">从分布、榜单与异常处理影响复核作业结果</h2>
+        <p class="page-head__description">
+          统计页会把提交量、评分完成率、异常评价处理和最终成绩发布影响汇总成统一的数据面板，便于发布前复核。
         </p>
-        <div class="page-hero__meta">
+        <div class="page-head__stats">
           <span>{{ stats.courseName }}</span>
           <span>{{ stats.assignmentTitle }}</span>
           <span>{{ stats.leaderboardType === 'FINAL' ? '最终榜' : '实时榜' }}</span>
         </div>
       </div>
 
-      <div class="page-hero__side">
-        <span class="layout-chip">publish status</span>
+      <div class="page-head__aside">
+        <span class="layout-chip">发布状态</span>
         <h3>{{ stats.resultsPublished ? '已发布' : '未发布' }}</h3>
-        <p>{{ stats.resultsPublished ? '学生端已看到最终成绩，排行榜也已冻结。' : '只有在教师确认发布后，学生端才会看到最终结果。' }}</p>
+        <p>{{ stats.resultsPublished ? '学生端已看到最终成绩，排行榜已冻结。' : '只有在教师确认发布后，学生端才会看到最终结果。' }}</p>
       </div>
     </section>
 
-    <div class="toolbar" style="margin-bottom: 18px;">
-      <el-select v-model="selectedCourseId" style="width: 220px;" @change="handleCourseChange">
-        <el-option v-for="course in teacherCourses" :key="course.id" :label="course.name" :value="course.id" />
-      </el-select>
-      <el-select v-model="selectedAssignmentId" style="width: 260px;" @change="handleAssignmentChange">
-        <el-option v-for="assignment in assignmentOptions" :key="assignment.id" :label="`${assignment.title} · ${assignment.displayStatus || assignment.status}`" :value="assignment.id" />
-      </el-select>
-      <el-button type="primary" :disabled="stats.resultsPublished" :loading="publishing" @click="handlePublish">{{ stats.resultsPublished ? '最终成绩已发布' : '发布最终成绩' }}</el-button>
-      <el-button type="warning" @click="goToAbnormalReview">查看异常评分治理</el-button>
+    <div class="filter-strip">
+      <div class="toolbar">
+        <el-select v-model="selectedCourseId" style="width: 220px;" @change="handleCourseChange">
+          <el-option v-for="course in teacherCourses" :key="course.id" :label="course.name" :value="course.id" />
+        </el-select>
+        <el-select v-model="selectedAssignmentId" style="width: 280px;" @change="handleAssignmentChange">
+          <el-option v-for="assignment in assignmentOptions" :key="assignment.id" :label="`${assignment.title} · ${assignment.displayStatus || assignment.status}`" :value="assignment.id" />
+        </el-select>
+        <el-button type="primary" :disabled="stats.resultsPublished" :loading="publishing" @click="handlePublish">
+          {{ stats.resultsPublished ? '最终成绩已发布' : '发布最终成绩' }}
+        </el-button>
+        <el-button type="warning" @click="goToAbnormalReview">查看异常治理</el-button>
+      </div>
     </div>
 
     <el-alert
       :title="stats.displayStatus || stats.assignmentStatus"
-      :description="stats.resultsPublished ? `最终成绩已发布${stats.resultsPublishedAt ? `：${stats.resultsPublishedAt}` : ''}` : '自动标记异常评分不会直接改变成绩；只有教师明确忽略后，该评分才会退出聚合。'"
+      :description="stats.resultsPublished ? `最终成绩已发布${stats.resultsPublishedAt ? `：${stats.resultsPublishedAt}` : ''}` : '自动标记异常评价不会直接改变成绩，只有教师明确忽略后，该评分才会退出聚合。'"
       :type="stats.resultsPublished ? 'success' : (stats.assignmentStatus === 'REVIEWING' ? 'warning' : 'info')"
       :closable="false"
       show-icon
-      style="margin-bottom: 20px;"
     />
 
     <div class="metric-grid">
-      <div class="metric-card"><span class="muted">提交数</span><strong>{{ stats.totalSubmissions }}</strong></div>
-      <div class="metric-card"><span class="muted">迟交数</span><strong>{{ stats.lateSubmissions }}</strong></div>
-      <div class="metric-card"><span class="muted">评分记录</span><strong>{{ stats.totalEvaluations }}</strong></div>
-      <div class="metric-card"><span class="muted">异常评分</span><strong>{{ stats.abnormalEvaluations }}</strong></div>
-      <div class="metric-card"><span class="muted">未处理</span><strong>{{ stats.abnormalPendingCount }}</strong></div>
-      <div class="metric-card"><span class="muted">评分完成率</span><strong>{{ stats.completionRate }}%</strong></div>
+      <div class="metric-card">
+        <span class="muted">提交数</span>
+        <strong>{{ stats.totalSubmissions }}</strong>
+      </div>
+      <div class="metric-card">
+        <span class="muted">迟交数</span>
+        <strong>{{ stats.lateSubmissions }}</strong>
+      </div>
+      <div class="metric-card">
+        <span class="muted">评分记录</span>
+        <strong>{{ stats.totalEvaluations }}</strong>
+      </div>
+      <div class="metric-card">
+        <span class="muted">异常评价</span>
+        <strong>{{ stats.abnormalEvaluations }}</strong>
+      </div>
+      <div class="metric-card">
+        <span class="muted">待处理异常</span>
+        <strong>{{ stats.abnormalPendingCount }}</strong>
+      </div>
+      <div class="metric-card">
+        <span class="muted">完成率</span>
+        <strong>{{ stats.completionRate }}%</strong>
+      </div>
     </div>
 
-    <div class="split-grid" style="margin-top: 20px;">
-      <div class="section-card section-card--accent">
-        <span class="section-eyebrow">distribution</span>
-        <h3>分数分布</h3>
-        <div style="margin-top: 18px;"><SimpleBarChart :items="stats.scoreDistribution" /></div>
-      </div>
-      <div class="section-card">
-        <span class="section-eyebrow">leaderboard</span>
-        <h3>当前排行榜</h3>
-        <div class="muted" style="margin: 10px 0 12px;">当前展示：{{ stats.leaderboardType === 'FINAL' ? '最终榜' : '实时榜' }}</div>
-        <el-table :data="stats.leaderboard">
-          <el-table-column prop="rank" label="排名" width="80" />
-          <el-table-column prop="projectName" label="项目" />
-          <el-table-column prop="finalScore" label="得分" width="100" />
-        </el-table>
-      </div>
-    </div>
-
-    <div class="split-grid" style="margin-top: 20px;">
-      <div class="section-card">
-        <span class="section-eyebrow">dimension averages</span>
-        <h3>各维度平均分</h3>
-        <div style="margin-top: 18px;"><SimpleBarChart :items="stats.dimensionAverages" /></div>
-      </div>
-      <div class="section-card section-card--accent">
-        <span class="section-eyebrow">project scores</span>
-        <h3>项目得分</h3>
+    <div class="content-grid">
+      <section class="section-card section-card--accent">
+        <span class="section-eyebrow">分数分布</span>
+        <h3 style="margin-top: 14px;">成绩区间</h3>
         <div style="margin-top: 18px;">
+          <SimpleBarChart :items="stats.scoreDistribution" />
+        </div>
+      </section>
+
+      <section class="section-card">
+        <span class="section-eyebrow">排行榜</span>
+        <h3 style="margin-top: 14px;">当前榜单</h3>
+        <p class="section-subtitle">当前展示：{{ stats.leaderboardType === 'FINAL' ? '最终榜' : '实时榜' }}</p>
+        <div class="data-table-wrap" style="margin-top: 18px;">
+          <el-table :data="stats.leaderboard">
+            <el-table-column prop="rank" label="排名" width="80" />
+            <el-table-column prop="projectName" label="项目" />
+            <el-table-column prop="finalScore" label="得分" width="100" />
+          </el-table>
+        </div>
+      </section>
+    </div>
+
+    <div class="content-grid">
+      <section class="section-card">
+        <span class="section-eyebrow">维度均分</span>
+        <h3 style="margin-top: 14px;">各维度平均分</h3>
+        <div style="margin-top: 18px;">
+          <SimpleBarChart :items="stats.dimensionAverages" />
+        </div>
+      </section>
+
+      <section class="section-card section-card--accent">
+        <span class="section-eyebrow">项目得分</span>
+        <h3 style="margin-top: 14px;">项目成绩对比</h3>
+        <div class="data-table-wrap" style="margin-top: 18px;">
           <el-table :data="stats.projectScores">
             <el-table-column prop="projectName" label="项目" />
             <el-table-column prop="peerScore" label="互评分" width="100" />
@@ -159,15 +188,15 @@ watch(() => route.params.assignmentId, async (next, previous) => {
             <el-table-column prop="finalScore" label="最终分" width="100" />
           </el-table>
         </div>
-      </div>
+      </section>
     </div>
 
-    <div class="split-grid" style="margin-top: 20px;">
+    <div class="content-grid">
       <div class="stack">
-        <div class="section-card">
-          <span class="section-eyebrow">review progress</span>
-          <h3>学生评分完成率</h3>
-          <div style="margin-top: 18px;">
+        <section class="section-card">
+          <span class="section-eyebrow">互评进度</span>
+          <h3 style="margin-top: 14px;">学生完成率</h3>
+          <div class="data-table-wrap" style="margin-top: 18px;">
             <el-table :data="stats.reviewProgressByStudent" size="small">
               <el-table-column prop="displayName" label="学生" />
               <el-table-column label="完成 / 应评">
@@ -176,12 +205,12 @@ watch(() => route.params.assignmentId, async (next, previous) => {
               <el-table-column prop="completionRate" label="完成率(%)" width="120" />
             </el-table>
           </div>
-        </div>
+        </section>
 
-        <div class="section-card">
-          <span class="section-eyebrow">abnormal hints</span>
-          <h3>异常评分概览</h3>
-          <div style="margin-top: 18px;">
+        <section class="section-card">
+          <span class="section-eyebrow">异常提示</span>
+          <h3 style="margin-top: 14px;">异常评分概览</h3>
+          <div class="data-table-wrap" style="margin-top: 18px;">
             <el-table :data="stats.abnormalHints" size="small">
               <el-table-column prop="projectName" label="项目" />
               <el-table-column prop="evaluatorName" label="评分人" width="120" />
@@ -195,26 +224,26 @@ watch(() => route.params.assignmentId, async (next, previous) => {
               </el-table-column>
             </el-table>
           </div>
-        </div>
+        </section>
       </div>
 
-      <div class="section-card">
-        <span class="section-eyebrow">blacklist</span>
-        <h3>黑名单规则</h3>
-        <div style="margin-top: 18px;">
+      <section class="section-card">
+        <span class="section-eyebrow">回避规则</span>
+        <h3 style="margin-top: 14px;">黑名单列表</h3>
+        <div class="data-table-wrap" style="margin-top: 18px;">
           <el-table :data="stats.blacklistRules" size="small">
             <el-table-column prop="evaluatorName" label="学生" width="140" />
             <el-table-column prop="targetProjectName" label="回避项目" />
             <el-table-column prop="createdAt" label="创建时间" width="180" />
           </el-table>
         </div>
-      </div>
+      </section>
     </div>
 
-    <div class="section-card" style="margin-top: 20px;">
-      <span class="section-eyebrow">impact</span>
-      <h3>异常处理影响表</h3>
-      <div style="margin-top: 18px;">
+    <section class="section-card">
+      <span class="section-eyebrow">影响分析</span>
+      <h3 style="margin-top: 14px;">异常处理影响表</h3>
+      <div class="data-table-wrap" style="margin-top: 18px;">
         <el-table :data="stats.abnormalImpacts">
           <el-table-column prop="projectName" label="项目" min-width="180" />
           <el-table-column prop="currentPeerScore" label="当前互评分" width="110" />
@@ -224,8 +253,8 @@ watch(() => route.params.assignmentId, async (next, previous) => {
           <el-table-column prop="rawFinalScore" label="未治理最终分" width="120" />
           <el-table-column prop="finalScoreDelta" label="最终分差值" width="110" />
         </el-table>
-        <el-empty v-if="!stats.abnormalImpacts.length" description="当前没有因异常评分治理产生分数变化的项目" :image-size="72" />
       </div>
-    </div>
+      <el-empty v-if="!stats.abnormalImpacts.length" description="当前没有因异常评价治理产生分数变化的项目" :image-size="72" />
+    </section>
   </div>
 </template>

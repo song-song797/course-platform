@@ -139,7 +139,7 @@ async function handleScore() {
 
 async function handleBlacklist() {
   if (!blacklistEvaluatorUserId.value) {
-    ElMessage.warning('请选择要回避该项目的学生')
+    ElMessage.warning('请选择需要回避该项目的学生')
     return
   }
   await addBlacklist(route.params.assignmentId, blacklistEvaluatorUserId.value, blacklistTarget.value.id)
@@ -156,7 +156,7 @@ async function handleExclude(evaluation, excluded = true) {
 }
 
 async function handlePublish() {
-  await ElMessageBox.confirm('发布后学生端将看到最终成绩，排行榜也会冻结为最终榜。确认发布吗？', '发布最终成绩', {
+  await ElMessageBox.confirm('发布后学生端会看到最终成绩，排行榜也会冻结为最终榜。确认发布吗？', '发布最终成绩', {
     type: 'warning',
     confirmButtonText: '确认发布',
   })
@@ -206,61 +206,65 @@ watch(
       syncFiltersFromRoute()
       await loadData()
     }
-  }
+  },
 )
 </script>
 
 <template>
   <div class="page-shell" v-if="assignment">
-    <section class="page-hero">
-      <div class="page-hero__card">
-        <span class="page-hero__eyebrow">review records</span>
-        <h1 class="page-hero__title">Review submissions, score with rubric and govern abnormal evaluations from one page</h1>
-        <p class="page-hero__description">
-          提交列表、教师评分、异常评分治理和结果发布都围绕当前作业展开，避免在多页面之间频繁切换。
+    <section class="page-head">
+      <div class="page-head__main">
+        <span class="page-head__eyebrow">评分治理</span>
+        <h2 class="page-head__title">在同一页面完成评分、治理与结果发布</h2>
+        <p class="page-head__description">
+          提交列表、教师评分、异常评价治理和结果发布都围绕当前作业展开，避免在多个页面之间频繁切换。
         </p>
-        <div class="page-hero__meta">
+        <div class="page-head__stats">
           <span>{{ assignment.title }}</span>
           <span>{{ assignment.displayStatus || assignment.status }}</span>
           <span>Rubric {{ assignment.rubric.length }} 项</span>
         </div>
-        <div class="page-hero__actions">
+        <div class="page-head__actions">
           <el-button v-if="assignment.mode === 'GROUP'" type="warning" @click="router.push(`/teacher/assignments/${route.params.assignmentId}/groups`)">小组管理</el-button>
-          <el-button :disabled="assignment.resultsPublished" @click="router.push(`/teacher/assignments/${route.params.assignmentId}/rubric`)">编辑 Rubric</el-button>
-          <el-button type="primary" @click="router.push(`/teacher/assignments/${route.params.assignmentId}/stats`)">查看统计</el-button>
+          <el-button :disabled="assignment.resultsPublished" @click="router.push(`/teacher/assignments/${route.params.assignmentId}/rubric`)">编辑评分规则</el-button>
+          <el-button type="primary" @click="router.push(`/teacher/assignments/${route.params.assignmentId}/stats`)">查看统计分析</el-button>
           <el-button type="success" :disabled="assignment.resultsPublished" :loading="publishing" @click="handlePublish">
             {{ assignment.resultsPublished ? '最终成绩已发布' : '发布最终成绩' }}
           </el-button>
         </div>
       </div>
 
-      <div class="page-hero__side">
-        <span class="layout-chip">submission count</span>
+      <div class="page-head__aside">
+        <span class="layout-chip">提交数量</span>
         <h3>{{ submissions.total }}</h3>
-        <p>{{ assignment.resultsPublished ? '当前页面进入只读状态。' : '异常评分会被标记，但只有教师明确忽略后才会退出聚合。' }}</p>
+        <p>{{ assignment.resultsPublished ? '当前页面已进入只读状态。' : '异常评价会被自动标记，但只有教师明确忽略后才会退出聚合计算。' }}</p>
       </div>
     </section>
 
     <el-alert
       :title="assignment.displayStatus || assignment.status"
-      :description="assignment.resultsPublished ? `最终成绩已发布${assignment.resultsPublishedAt ? `：${assignment.resultsPublishedAt}` : ''}，当前页面进入只读状态。` : '系统会自动标记异常评分，但只有教师明确执行“忽略该评分”后，该评分才不参与计分。恢复后会重新参与成绩聚合。'"
+      :description="assignment.resultsPublished ? `最终成绩已发布${assignment.resultsPublishedAt ? `：${assignment.resultsPublishedAt}` : ''}，当前页面已只读。` : '系统会自动标记异常评价，但只有教师明确忽略后，该评分才不参与计分；恢复后会重新参与聚合。'"
       :type="assignment.resultsPublished ? 'success' : (assignment.status === 'REVIEWING' ? 'warning' : 'info')"
       :closable="false"
       show-icon
-      style="margin-bottom: 20px;"
     />
 
-    <div class="split-grid">
-      <div class="section-card section-card--accent">
-        <span class="section-eyebrow">submissions</span>
-        <h3>项目提交列表</h3>
-        <div style="margin-top: 18px;">
+    <div class="content-grid">
+      <section class="section-card section-card--accent">
+        <div class="panel-header">
+          <div>
+            <span class="section-eyebrow">提交列表</span>
+            <h3 style="margin-top: 14px;">项目提交与教师评分入口</h3>
+          </div>
+          <span class="layout-chip">{{ submissions.total }} 条</span>
+        </div>
+        <div class="data-table-wrap" style="margin-top: 18px;">
           <el-table :data="submissions.list">
-            <el-table-column prop="projectName" label="项目名称" />
-            <el-table-column label="成员">
+            <el-table-column prop="projectName" label="项目名称" min-width="180" />
+            <el-table-column label="成员" min-width="220">
               <template #default="{ row }">{{ row.members.map((item) => item.name).join(' / ') }}</template>
             </el-table-column>
-            <el-table-column prop="repoUrl" label="仓库链接" />
+            <el-table-column prop="repoUrl" label="仓库链接" min-width="220" />
             <el-table-column label="状态" width="100">
               <template #default="{ row }">
                 <el-tag v-if="row.late" type="warning">迟交</el-tag>
@@ -270,42 +274,44 @@ watch(
             <el-table-column label="操作" width="220">
               <template #default="{ row }">
                 <el-button type="primary" link :disabled="assignment.resultsPublished" @click="openScoreDialog(row)">教师评分</el-button>
-                <el-button type="danger" link :disabled="assignment.resultsPublished" @click="openBlacklistDialog(row)">拉黑名单</el-button>
+                <el-button type="danger" link :disabled="assignment.resultsPublished" @click="openBlacklistDialog(row)">添加回避规则</el-button>
               </template>
             </el-table-column>
           </el-table>
-          <div v-if="submissions.total > submissions.pageSize" class="pagination-bar">
-            <el-pagination
-              background
-              layout="prev, pager, next"
-              :current-page="submissions.pageNo"
-              :page-size="submissions.pageSize"
-              :total="submissions.total"
-              @current-change="handleSubmissionPageChange"
-            />
+        </div>
+        <div v-if="submissions.total > submissions.pageSize" class="pagination-bar">
+          <el-pagination
+            background
+            layout="prev, pager, next"
+            :current-page="submissions.pageNo"
+            :page-size="submissions.pageSize"
+            :total="submissions.total"
+            @current-change="handleSubmissionPageChange"
+          />
+        </div>
+      </section>
+
+      <section class="section-card">
+        <span class="section-eyebrow">评价治理</span>
+        <h3 style="margin-top: 14px;">筛选并处理异常评价</h3>
+        <div class="filter-strip" style="margin-top: 18px;">
+          <div class="toolbar">
+            <el-select v-model="filters.submissionId" clearable placeholder="按项目筛选" style="width: 160px;">
+              <el-option v-for="submission in submissions.list" :key="submission.id" :label="submission.projectName" :value="submission.id" />
+            </el-select>
+            <el-select v-model="filters.evaluatorUserId" clearable placeholder="按评分人筛选" style="width: 180px;">
+              <el-option v-for="evaluator in evaluatorOptions" :key="evaluator.id" :label="`${evaluator.name} (${evaluator.username})`" :value="evaluator.id" />
+            </el-select>
+            <el-select v-model="filters.reviewStatus" clearable placeholder="按处理状态筛选" style="width: 160px;">
+              <el-option v-for="item in reviewStatusOptions" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
+            <el-switch v-model="filters.abnormalOnly" inline-prompt active-text="仅异常" inactive-text="全部" />
+            <el-button type="primary" :loading="loadingEvaluations" @click="handleFilter">查询</el-button>
+            <el-button @click="resetFilters">重置</el-button>
           </div>
         </div>
-      </div>
 
-      <div class="section-card">
-        <span class="section-eyebrow">review governance</span>
-        <h3>异常评分治理</h3>
-        <div class="toolbar" style="margin-top: 18px;">
-          <el-select v-model="filters.submissionId" clearable placeholder="按项目筛选" style="width: 160px;">
-            <el-option v-for="submission in submissions.list" :key="submission.id" :label="submission.projectName" :value="submission.id" />
-          </el-select>
-          <el-select v-model="filters.evaluatorUserId" clearable placeholder="按评分人筛选" style="width: 180px;">
-            <el-option v-for="evaluator in evaluatorOptions" :key="evaluator.id" :label="`${evaluator.name} (${evaluator.username})`" :value="evaluator.id" />
-          </el-select>
-          <el-select v-model="filters.reviewStatus" clearable placeholder="按处理状态筛选" style="width: 160px;">
-            <el-option v-for="item in reviewStatusOptions" :key="item.value" :label="item.label" :value="item.value" />
-          </el-select>
-          <el-switch v-model="filters.abnormalOnly" inline-prompt active-text="仅异常" inactive-text="全部" />
-          <el-button type="primary" :loading="loadingEvaluations" @click="handleFilter">查询</el-button>
-          <el-button @click="resetFilters">重置</el-button>
-        </div>
-
-        <div style="margin-top: 18px;">
+        <div class="data-table-wrap" style="margin-top: 18px;">
           <el-table :data="evaluations.list" v-loading="loadingEvaluations">
             <el-table-column type="expand">
               <template #default="{ row }">
@@ -314,7 +320,7 @@ watch(
                   <el-table :data="row.itemScores" size="small" border>
                     <el-table-column prop="rubricItemName" label="评分项" />
                     <el-table-column prop="score" label="分数" width="100" />
-                    <el-table-column prop="comment" label="评论" />
+                    <el-table-column prop="comment" label="评语" />
                   </el-table>
                   <el-empty v-if="!row.itemScores.length" description="暂无评分项详情" :image-size="56" />
                 </div>
@@ -350,18 +356,18 @@ watch(
               </template>
             </el-table-column>
           </el-table>
-          <div v-if="evaluations.total > evaluations.pageSize" class="pagination-bar">
-            <el-pagination
-              background
-              layout="prev, pager, next"
-              :current-page="evaluations.pageNo"
-              :page-size="evaluations.pageSize"
-              :total="evaluations.total"
-              @current-change="handleEvaluationPageChange"
-            />
-          </div>
         </div>
-      </div>
+        <div v-if="evaluations.total > evaluations.pageSize" class="pagination-bar">
+          <el-pagination
+            background
+            layout="prev, pager, next"
+            :current-page="evaluations.pageNo"
+            :page-size="evaluations.pageSize"
+            :total="evaluations.total"
+            @current-change="handleEvaluationPageChange"
+          />
+        </div>
+      </section>
     </div>
 
     <el-dialog v-model="scoreDialogVisible" width="760px" title="教师评分">
@@ -374,9 +380,9 @@ watch(
             </div>
           </template>
           <el-slider v-model="item.score" :min="0" :max="10" :step="0.5" />
-          <el-input v-model="item.comment" placeholder="单项评论（可选）" />
+          <el-input v-model="item.comment" placeholder="单项评语，可选填写" />
         </el-card>
-        <el-input v-model="form.overallComment" type="textarea" :rows="4" placeholder="总体评语" />
+        <el-input v-model="form.overallComment" type="textarea" :rows="4" placeholder="整体评语" />
       </div>
       <template #footer>
         <el-button @click="scoreDialogVisible = false">取消</el-button>
@@ -384,7 +390,7 @@ watch(
       </template>
     </el-dialog>
 
-    <el-dialog v-model="blacklistDialogVisible" width="560px" title="添加黑名单规则">
+    <el-dialog v-model="blacklistDialogVisible" width="560px" title="添加回避规则">
       <div class="dialog-content">
         <el-alert :title="`项目：${blacklistTarget?.projectName || ''}`" type="warning" :closable="false" show-icon />
         <el-form label-position="top">

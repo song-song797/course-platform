@@ -1,9 +1,12 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
+const TOKEN_STORAGE_KEY = 'course-platform-token'
+const USER_STORAGE_KEY = 'course-platform-user'
+
 function clearAuthState() {
-  localStorage.removeItem('course-platform-demo-token')
-  localStorage.removeItem('course-platform-demo-user')
+  localStorage.removeItem(TOKEN_STORAGE_KEY)
+  localStorage.removeItem(USER_STORAGE_KEY)
 }
 
 function isTokenError(payload) {
@@ -16,7 +19,7 @@ const http = axios.create({
 })
 
 http.interceptors.request.use((config) => {
-  const token = localStorage.getItem('course-platform-demo-token')
+  const token = localStorage.getItem(TOKEN_STORAGE_KEY)
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }

@@ -2,32 +2,35 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { changePassword, getMe, login, logout } from '../api/auth'
 
+const TOKEN_STORAGE_KEY = 'course-platform-token'
+const USER_STORAGE_KEY = 'course-platform-user'
+
 export const useAuthStore = defineStore('auth', () => {
-  const token = ref(localStorage.getItem('course-platform-demo-token') || '')
-  const user = ref(token.value ? JSON.parse(localStorage.getItem('course-platform-demo-user') || 'null') : null)
+  const token = ref(localStorage.getItem(TOKEN_STORAGE_KEY) || '')
+  const user = ref(token.value ? JSON.parse(localStorage.getItem(USER_STORAGE_KEY) || 'null') : null)
 
   const isLoggedIn = computed(() => Boolean(token.value))
 
   function clearAuth() {
     token.value = ''
     user.value = null
-    localStorage.removeItem('course-platform-demo-token')
-    localStorage.removeItem('course-platform-demo-user')
+    localStorage.removeItem(TOKEN_STORAGE_KEY)
+    localStorage.removeItem(USER_STORAGE_KEY)
   }
 
   async function loginByPassword(payload) {
     const data = await login(payload)
     token.value = data.token
     user.value = data.user
-    localStorage.setItem('course-platform-demo-token', data.token)
-    localStorage.setItem('course-platform-demo-user', JSON.stringify(data.user))
+    localStorage.setItem(TOKEN_STORAGE_KEY, data.token)
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user))
     return data.user
   }
 
   async function refreshMe() {
     if (!token.value) return null
     user.value = await getMe()
-    localStorage.setItem('course-platform-demo-user', JSON.stringify(user.value))
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user.value))
     return user.value
   }
 
@@ -35,7 +38,7 @@ export const useAuthStore = defineStore('auth', () => {
     await changePassword({ newPassword })
     if (user.value) {
       user.value = { ...user.value, firstLoginResetRequired: false }
-      localStorage.setItem('course-platform-demo-user', JSON.stringify(user.value))
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user.value))
     }
   }
 

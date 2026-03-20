@@ -86,97 +86,125 @@ watch(() => route.params.assignmentId, async (next, previous) => {
 
 <template>
   <div class="page-shell">
-    <section v-if="assignment" class="page-hero">
-      <div class="page-hero__card">
-        <span class="page-hero__eyebrow">project plaza</span>
-        <h1 class="page-hero__title">Review projects in a shared plaza and contribute structured peer feedback</h1>
-        <p class="page-hero__description">
-          项目广场会自动屏蔽自己、自己组以及黑名单项目。你可以直接查看当前得分状态，并进入评分弹窗完成互评。
+    <section v-if="assignment" class="page-head">
+      <div class="page-head__main">
+        <span class="page-head__eyebrow">项目广场</span>
+        <h2 class="page-head__title">在共享广场中浏览项目并完成结构化互评</h2>
+        <p class="page-head__description">
+          项目广场会自动屏蔽自己、同组成员以及黑名单项目。你可以直接查看当前得分状态，并进入评分弹窗完成互评。
         </p>
-        <div class="page-hero__meta">
+        <div class="page-head__stats">
           <span>共 {{ projectSummary.total }} 个项目</span>
           <span>共 {{ projectSummary.reviewable }} 个可评项目</span>
-          <span>已完成 {{ projectSummary.evaluated }} 个评分</span>
+          <span>已完成 {{ projectSummary.evaluated }} 次互评</span>
           <span>本页 {{ availableCount }} 个可评项目</span>
           <span>{{ assignment.displayStatus || assignment.status }}</span>
         </div>
       </div>
 
-      <div class="page-hero__side">
-        <span class="layout-chip">peer review</span>
-        <h3>{{ assignment.resultsPublished ? '成绩已冻结' : '当前展示实时得分' }}</h3>
-        <p>教师发布最终成绩前，这里的项目分数与排行榜都会保持实时更新。</p>
+      <div class="page-head__aside">
+        <span class="layout-chip">互评状态</span>
+        <h3>{{ assignment.resultsPublished ? '成绩已冻结' : '实时分数展示中' }}</h3>
+        <p>教师发布最终结果前，这里的项目分数和排名都会保持实时更新。</p>
       </div>
     </section>
 
     <el-alert
       v-if="assignment"
       :title="assignment.displayStatus || assignment.status"
-      :description="assignment.resultsPublished ? '当前排行榜和项目得分已冻结为最终结果。' : '当前展示为实时成绩，教师发布后会冻结为最终成绩。'"
+      :description="assignment.resultsPublished ? '当前排行榜和项目得分已冻结为最终结果。' : '当前展示为实时成绩，教师发布后会冻结为最终结果。'"
       :type="assignment.resultsPublished ? 'success' : (assignment.status === 'REVIEWING' ? 'warning' : 'info')"
       :closable="false"
       show-icon
-      style="margin-bottom: 20px;"
     />
 
-    <div class="metric-grid" style="margin-bottom: 20px;">
+    <div class="metric-grid">
       <div class="metric-card">
-        <span class="muted">本作业项目数</span>
+        <span class="muted">项目总数</span>
         <strong>{{ projectSummary.total }}</strong>
       </div>
       <div class="metric-card">
-        <span class="muted">可评项目数</span>
+        <span class="muted">可评项目</span>
         <strong>{{ projectSummary.reviewable }}</strong>
       </div>
       <div class="metric-card">
-        <span class="muted">已评分项目数</span>
+        <span class="muted">已评项目</span>
         <strong>{{ projectSummary.evaluated }}</strong>
       </div>
       <div class="metric-card">
-        <span class="muted">当前榜单</span>
+        <span class="muted">榜单类型</span>
         <strong>{{ assignment?.resultsPublished ? '最终榜' : '实时榜' }}</strong>
       </div>
     </div>
 
-    <div class="section-card">
-      <span class="section-eyebrow">project list</span>
-      <h3>可浏览与可评价项目</h3>
-      <div style="margin-top: 18px;">
-        <el-table :data="page.list">
-          <el-table-column prop="projectName" label="项目名称" />
-          <el-table-column label="成员">
-            <template #default="{ row }">{{ row.memberNames.join(' / ') }}</template>
-          </el-table-column>
-          <el-table-column label="当前得分" width="140">
-            <template #default="{ row }">
-              <strong>{{ row.finalScore }}</strong>
-              <div class="muted" style="font-size: 12px;">{{ row.scoreType === 'FINAL' ? '最终分' : '实时分' }}</div>
-            </template>
-          </el-table-column>
-          <el-table-column label="状态" width="140">
-            <template #default="{ row }">
-              <el-tag v-if="row.evaluated" type="success">已评分</el-tag>
-              <el-tag v-else-if="row.canEvaluate" type="primary">可评价</el-tag>
-              <el-tag v-else type="info">不可评价</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="140">
-            <template #default="{ row }">
-              <el-button type="primary" link :disabled="!row.canEvaluate" @click="openScoreDialog(row)">去评分</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-      </div>
+    <div class="content-grid">
+      <section class="section-card section-card--accent">
+        <div class="panel-header">
+          <div>
+            <span class="section-eyebrow">项目列表</span>
+            <h3 style="margin-top: 14px;">可浏览与可评价项目</h3>
+          </div>
+          <span class="layout-chip">{{ page.total }} 个项目</span>
+        </div>
 
-      <div v-if="page.total > page.pageSize" class="pagination-bar">
-        <el-pagination
-          background
-          layout="prev, pager, next"
-          :current-page="page.pageNo"
-          :page-size="page.pageSize"
-          :total="page.total"
-          @current-change="handlePageChange"
-        />
+        <div class="data-table-wrap" style="margin-top: 18px;">
+          <el-table :data="page.list">
+            <el-table-column prop="projectName" label="项目名称" min-width="180" />
+            <el-table-column label="成员" min-width="220">
+              <template #default="{ row }">{{ row.memberNames.join(' / ') }}</template>
+            </el-table-column>
+            <el-table-column label="当前得分" width="140">
+              <template #default="{ row }">
+                <strong>{{ row.finalScore }}</strong>
+                <div class="muted" style="font-size: 12px;">{{ row.scoreType === 'FINAL' ? '最终分' : '实时分' }}</div>
+              </template>
+            </el-table-column>
+            <el-table-column label="状态" width="140">
+              <template #default="{ row }">
+                <el-tag v-if="row.evaluated" type="success">已评价</el-tag>
+                <el-tag v-else-if="row.canEvaluate" type="primary">可评价</el-tag>
+                <el-tag v-else type="info">不可评价</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="140">
+              <template #default="{ row }">
+                <el-button type="primary" link :disabled="!row.canEvaluate" @click="openScoreDialog(row)">去评分</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+
+        <div v-if="page.total > page.pageSize" class="pagination-bar">
+          <el-pagination
+            background
+            layout="prev, pager, next"
+            :current-page="page.pageNo"
+            :page-size="page.pageSize"
+            :total="page.total"
+            @current-change="handlePageChange"
+          />
+        </div>
+      </section>
+
+      <div class="stack">
+        <section class="section-card">
+          <span class="section-eyebrow">互评说明</span>
+          <h3 style="margin-top: 14px;">评分建议</h3>
+          <div class="stack" style="margin-top: 18px; gap: 16px;">
+            <div class="mini-card">
+              <strong>按维度独立打分</strong>
+              <p class="section-subtitle">每个维度都对应 Rubric 项，建议依据项目材料逐项判断，不要只给总评。</p>
+            </div>
+            <div class="mini-card">
+              <strong>评论尽量可执行</strong>
+              <p class="section-subtitle">好的互评应说明优点、问题和可改进方向，帮助对方有效复盘。</p>
+            </div>
+            <div class="mini-card">
+              <strong>关注可评标识</strong>
+              <p class="section-subtitle">只有“可评价”的项目会计入你的互评任务，其余项目无需处理。</p>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
 
@@ -185,9 +213,9 @@ watch(() => route.params.assignmentId, async (next, previous) => {
         <el-card v-for="item in form.itemScores" :key="item.rubricItemId" shadow="never">
           <template #header>{{ item.name }}</template>
           <el-slider v-model="item.score" :min="0" :max="10" :step="0.5" />
-          <el-input v-model="item.comment" placeholder="单项评论（可选）" />
+          <el-input v-model="item.comment" placeholder="单项评语，可选填写" />
         </el-card>
-        <el-input v-model="form.overallComment" type="textarea" :rows="4" placeholder="总体评价" />
+        <el-input v-model="form.overallComment" type="textarea" :rows="4" placeholder="整体评价" />
       </div>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>

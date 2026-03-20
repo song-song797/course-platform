@@ -54,34 +54,34 @@ watch(
     if (next && next !== previous) {
       await loadData()
     }
-  }
+  },
 )
 </script>
 
 <template>
   <div class="page-shell" v-if="dashboard">
-    <section class="page-hero">
-      <div class="page-hero__card">
-        <span class="page-hero__eyebrow">result dashboard</span>
-        <h1 class="page-hero__title">Track your score, ranking and qualitative feedback in one learning dashboard</h1>
-        <p class="page-hero__description">
+    <section class="page-head">
+      <div class="page-head__main">
+        <span class="page-head__eyebrow">结果看板</span>
+        <h2 class="page-head__title">集中跟踪得分、排名与匿名反馈</h2>
+        <p class="page-head__description">
           从互评分、教师评分到最终成绩发布，所有关键结果都会汇总在这里，帮助你快速理解项目当前表现。
         </p>
-        <div class="page-hero__meta">
+        <div class="page-head__stats">
           <span>{{ dashboard.courseName }}</span>
           <span>{{ dashboard.assignmentTitle }}</span>
           <span>{{ leaderboardTypeLabel }}</span>
         </div>
       </div>
 
-      <div class="page-hero__side">
-        <span class="layout-chip">current rank</span>
+      <div class="page-head__aside">
+        <span class="layout-chip">当前排名</span>
         <h3>{{ summary.currentRank ? `#${summary.currentRank}` : '--' }}</h3>
-        <p>{{ summary.published ? '最终成绩已发布，可查看冻结后的排名与结果。' : '当前仍处于实时成绩阶段，教师发布后会更新最终结果。' }}</p>
+        <p>{{ summary.published ? '最终成绩已发布，可查看冻结后的排名和结果。' : '当前仍处于实时成绩阶段，教师发布后会更新最终结果。' }}</p>
       </div>
     </section>
 
-    <div class="toolbar" style="margin-bottom: 16px; gap: 10px; flex-wrap: wrap;">
+    <div class="toolbar" style="gap: 10px;">
       <el-tag v-for="tag in statusTags" :key="tag.label" :type="tag.type" effect="light">
         {{ tag.label }}
       </el-tag>
@@ -96,32 +96,49 @@ watch(
       :type="summary.published ? 'success' : (dashboard.assignmentStatus === 'REVIEWING' ? 'warning' : 'info')"
       :closable="false"
       show-icon
-      style="margin-bottom: 20px;"
     />
 
     <div class="metric-grid">
-      <div class="metric-card"><span class="muted">学生互评分</span><strong>{{ hasSubmission ? (summary.peerScore ?? '--') : '待提交' }}</strong></div>
-      <div class="metric-card"><span class="muted">教师评分</span><strong>{{ hasSubmission ? (summary.teacherScore ?? '--') : '待提交' }}</strong></div>
-      <div class="metric-card"><span class="muted">实时综合分</span><strong>{{ hasSubmission ? (summary.realtimeFinalScore ?? '--') : '待提交' }}</strong></div>
-      <div class="metric-card"><span class="muted">最终得分</span><strong>{{ !hasSubmission ? '待提交' : (summary.published ? (summary.finalScore ?? '--') : '未发布') }}</strong></div>
-      <div class="metric-card"><span class="muted">当前排名</span><strong>{{ summary.currentRank ? `#${summary.currentRank}` : '--' }}</strong></div>
-      <div class="metric-card"><span class="muted">总项目数</span><strong>{{ summary.totalProjects ?? 0 }}</strong></div>
+      <div class="metric-card">
+        <span class="muted">学生互评分</span>
+        <strong>{{ hasSubmission ? (summary.peerScore ?? '--') : '待提交' }}</strong>
+      </div>
+      <div class="metric-card">
+        <span class="muted">教师评分</span>
+        <strong>{{ hasSubmission ? (summary.teacherScore ?? '--') : '待提交' }}</strong>
+      </div>
+      <div class="metric-card">
+        <span class="muted">实时综合分</span>
+        <strong>{{ hasSubmission ? (summary.realtimeFinalScore ?? '--') : '待提交' }}</strong>
+      </div>
+      <div class="metric-card">
+        <span class="muted">最终得分</span>
+        <strong>{{ !hasSubmission ? '待提交' : (summary.published ? (summary.finalScore ?? '--') : '未发布') }}</strong>
+      </div>
+      <div class="metric-card">
+        <span class="muted">当前排名</span>
+        <strong>{{ summary.currentRank ? `#${summary.currentRank}` : '--' }}</strong>
+      </div>
+      <div class="metric-card">
+        <span class="muted">项目总数</span>
+        <strong>{{ summary.totalProjects ?? 0 }}</strong>
+      </div>
     </div>
 
-    <div class="split-grid" style="margin-top: 20px; align-items: stretch;">
-      <div class="section-card">
-        <span class="section-eyebrow">radar</span>
-        <h3>维度雷达图</h3>
+    <div class="content-grid">
+      <section class="section-card">
+        <span class="section-eyebrow">维度画像</span>
+        <h3 style="margin-top: 14px;">雷达图分析</h3>
         <div style="margin-top: 18px;">
           <SimpleRadarChart v-if="summary.radar?.length" :items="summary.radar" />
           <el-empty v-else description="提交项目并完成评分后，这里会显示你的维度画像" :image-size="72" />
         </div>
-      </div>
+      </section>
 
       <div class="stack">
-        <div class="section-card section-card--accent">
-          <span class="section-eyebrow">dimensions</span>
-          <h3>各维度均分</h3>
+        <section class="section-card section-card--accent">
+          <span class="section-eyebrow">维度均分</span>
+          <h3 style="margin-top: 14px;">各维度表现</h3>
           <div v-if="dimensionCards.length" class="metric-grid" style="margin-top: 18px;">
             <div v-for="item in dimensionCards" :key="item.name" class="metric-card">
               <span class="muted">{{ item.name }}</span>
@@ -129,11 +146,11 @@ watch(
             </div>
           </div>
           <el-empty v-else description="暂无可展示的维度均分" :image-size="72" />
-        </div>
+        </section>
 
-        <div class="section-card">
-          <span class="section-eyebrow">comments</span>
-          <h3>匿名评语（{{ summary.comments?.length || 0 }}）</h3>
+        <section class="section-card">
+          <span class="section-eyebrow">匿名评语</span>
+          <h3 style="margin-top: 14px;">反馈摘要（{{ summary.comments?.length || 0 }}）</h3>
           <div style="margin-top: 18px;">
             <el-timeline v-if="summary.comments?.length">
               <el-timeline-item v-for="(comment, index) in summary.comments" :key="index" :timestamp="comment.authorRole">
@@ -142,40 +159,54 @@ watch(
             </el-timeline>
             <el-empty v-else :description="hasSubmission ? '暂时还没有匿名评语' : '提交项目后，这里会汇总匿名评语'" :image-size="72" />
           </div>
-        </div>
+        </section>
+      </div>
+    </div>
 
-        <div v-if="dashboard.submission" class="section-card">
-          <span class="section-eyebrow">my submission</span>
-          <h3>我的提交</h3>
-          <div class="stack" style="gap: 8px; margin-top: 14px;">
-            <div><strong>{{ dashboard.submission.projectName }}</strong></div>
-            <div class="muted">仓库：{{ dashboard.submission.repoUrl }}</div>
-            <div class="muted">成员：{{ dashboard.submission.members.map((item) => item.name).join(' / ') }}</div>
-            <div class="muted">提交时间：{{ dashboard.submission.submittedAt || '--' }}</div>
+    <div class="content-grid">
+      <div class="stack">
+        <section v-if="dashboard.submission" class="section-card">
+          <span class="section-eyebrow">我的提交</span>
+          <h3 style="margin-top: 14px;">作品信息</h3>
+          <div class="stack" style="margin-top: 18px; gap: 12px;">
+            <div class="mini-card">
+              <strong>{{ dashboard.submission.projectName }}</strong>
+              <p class="section-subtitle">仓库：{{ dashboard.submission.repoUrl }}</p>
+            </div>
+            <div class="mini-card">
+              <strong>成员</strong>
+              <p class="section-subtitle">{{ dashboard.submission.members.map((item) => item.name).join(' / ') }}</p>
+            </div>
+            <div class="mini-card">
+              <strong>提交时间</strong>
+              <p class="section-subtitle">{{ dashboard.submission.submittedAt || '--' }}</p>
+            </div>
           </div>
-        </div>
+        </section>
+      </div>
 
-        <div class="section-card">
-          <span class="section-eyebrow">leaderboard</span>
-          <h3>排行榜</h3>
-          <div class="muted" style="margin: 10px 0 12px;">当前展示：{{ leaderboardTypeLabel }}</div>
+      <section class="section-card">
+        <span class="section-eyebrow">排行榜</span>
+        <h3 style="margin-top: 14px;">当前榜单</h3>
+        <p class="section-subtitle">当前展示：{{ leaderboardTypeLabel }}</p>
+        <div class="data-table-wrap" style="margin-top: 18px;">
           <el-table :data="leaderboardPage.list" size="small">
             <el-table-column prop="rank" label="排名" width="80" />
             <el-table-column prop="projectName" label="项目" />
             <el-table-column prop="finalScore" label="得分" width="100" />
           </el-table>
-          <div v-if="leaderboardPage.total > leaderboardPage.pageSize" class="pagination-bar">
-            <el-pagination
-              background
-              layout="prev, pager, next"
-              :current-page="leaderboardPage.pageNo"
-              :page-size="leaderboardPage.pageSize"
-              :total="leaderboardPage.total"
-              @current-change="handleLeaderboardPageChange"
-            />
-          </div>
         </div>
-      </div>
+        <div v-if="leaderboardPage.total > leaderboardPage.pageSize" class="pagination-bar">
+          <el-pagination
+            background
+            layout="prev, pager, next"
+            :current-page="leaderboardPage.pageNo"
+            :page-size="leaderboardPage.pageSize"
+            :total="leaderboardPage.total"
+            @current-change="handleLeaderboardPageChange"
+          />
+        </div>
+      </section>
     </div>
   </div>
 </template>
