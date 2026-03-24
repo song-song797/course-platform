@@ -41,7 +41,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         }
 
         enforceRole(user, request.getRequestURI());
-        enforceFirstLoginReset(user, request.getRequestURI());
+        enforceFirstLoginReset(user, request);
 
         request.setAttribute("currentUserId", userId);
         request.setAttribute("currentUserRole", user.role);
@@ -53,8 +53,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         if (requestUri.startsWith("/api/v1/admin/") && !"ADMIN".equals(user.role)) {
             throw new ForbiddenException("无权访问管理员接口");
         }
-        if (requestUri.startsWith("/api/v1/teacher/")
-            && !("TEACHER".equals(user.role) || "ADMIN".equals(user.role))) {
+        if (requestUri.startsWith("/api/v1/teacher/") && !"TEACHER".equals(user.role)) {
             throw new ForbiddenException("无权访问教师接口");
         }
         if (requestUri.startsWith("/api/v1/student/") && !"STUDENT".equals(user.role)) {
@@ -62,13 +61,19 @@ public class AuthInterceptor implements HandlerInterceptor {
         }
     }
 
-    private void enforceFirstLoginReset(UserEntity user, String requestUri) {
+    private void enforceFirstLoginReset(UserEntity user, HttpServletRequest request) {
         if (!user.firstLoginResetRequired) {
             return;
         }
+        String requestUri = request.getRequestURI();
         if (requestUri.startsWith("/api/v1/auth/change-password")
             || requestUri.startsWith("/api/v1/auth/logout")
             || requestUri.startsWith("/api/v1/auth/me")) {
+            return;
+        }
+        // The frontend already redirects first-login users to the password reset page.
+        // Keep read-only APIs available so existing dashboards and detail pages remain queryable.
+        if (HttpMethod.GET.matches(request.getMethod())) {
             return;
         }
         throw new ForbiddenException("首次登录请先修改密码");

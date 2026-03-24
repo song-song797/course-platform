@@ -147,12 +147,6 @@ public class TeacherController {
         return ApiResponse.success(demoPlatformService.removeBlacklist(userId, assignmentId, evaluatorUserId, targetSubmissionId));
     }
 
-    @PatchMapping("/assignments/{assignmentId}/publish-results")
-    public ApiResponse<Map<String, Object>> publishResults(HttpServletRequest request, @PathVariable Long assignmentId) {
-        Long userId = (Long) request.getAttribute("currentUserId");
-        return ApiResponse.success(demoPlatformService.publishResults(userId, assignmentId));
-    }
-
     @GetMapping("/assignments/{assignmentId}/stats")
     public ApiResponse<DemoViews.TeacherStatsVo> getStats(HttpServletRequest request, @PathVariable Long assignmentId) {
         Long userId = (Long) request.getAttribute("currentUserId");

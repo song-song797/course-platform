@@ -23,7 +23,8 @@ public final class DemoViews {
     }
 
     public record StudentTaskCardVo(Long assignmentId, Long courseId, String courseName, String assignmentTitle,
-                                    String mode, String displayStatus, String deadline, String taskType, String actionLabel) {
+                                    String mode, String displayStatus, String deadline, String submissionCloseAt,
+                                    String taskType, String actionLabel) {
     }
 
     public record StudentReviewHighlightVo(Long assignmentId, String courseName, String assignmentTitle,
@@ -52,7 +53,7 @@ public final class DemoViews {
                                        List<CourseMemberVo> studentCandidates) {
     }
 
-    public record AssignmentSummaryVo(Long id, String title, String mode, String deadline, String status,
+    public record AssignmentSummaryVo(Long id, String title, String mode, String deadline, String submissionCloseAt, String status,
                                       boolean resultsPublished, String resultsPublishedAt, String displayStatus) {
     }
 
@@ -86,7 +87,7 @@ public final class DemoViews {
     }
 
     public record AssignmentDetailVo(Long id, Long courseId, String courseName, String title, String mode, String description,
-                                     String deadline, boolean allowLate, int peerWeight, int teacherWeight, String status,
+                                     String deadline, String submissionCloseAt, boolean allowLate, int peerWeight, int teacherWeight, String status,
                                      boolean resultsPublished, String resultsPublishedAt, String displayStatus,
                                      List<RubricItemVo> rubric, List<MemberVo> studentMembers, AssignmentGroupVo myGroup,
                                      boolean ungroupedForGroupAssignment, SubmissionSummaryVo summary) {
@@ -99,7 +100,8 @@ public final class DemoViews {
     }
 
     public record ProjectCardVo(Long id, String projectName, String repoUrl, List<String> memberNames,
-                                Double finalScore, String scoreType, boolean canEvaluate, boolean evaluated, boolean late) {
+                                Double finalScore, String scoreType, boolean canEvaluate, boolean evaluated,
+                                String ineligibleReason, boolean late) {
     }
 
     public record EvaluationItemScoreVo(Long rubricItemId, String rubricItemName, Double score, String comment) {
@@ -107,7 +109,7 @@ public final class DemoViews {
 
     // `abnormal` is the system's detection result. `excluded` alone controls whether a score participates in aggregation.
     public record EvaluationRecordVo(Long id, Long submissionId, String projectName, Long evaluatorUserId, String evaluatorName,
-                                     String evaluatorRole, Double totalScore, String comment, boolean abnormal,
+                                     String evaluatorUsername, String evaluatorRole, Double totalScore, String comment, boolean abnormal,
                                      String abnormalReason, boolean excluded, String reviewStatus,
                                      List<EvaluationItemScoreVo> itemScores, String createdAt) {
     }

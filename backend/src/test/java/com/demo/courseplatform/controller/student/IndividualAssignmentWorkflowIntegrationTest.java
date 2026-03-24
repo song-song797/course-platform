@@ -72,6 +72,30 @@ class IndividualAssignmentWorkflowIntegrationTest extends AbstractIntegrationTes
             .andExpect(jsonPath("$.data.displayStatus").value("最终成绩已生成"));
     }
 
+    @Test
+    void shouldAllowLateSubmissionWithinGraceWindowWhenAssignmentAllowsLate() throws Exception {
+        setAssignmentDeadlineHoursFromNow(1002L, -2);
+
+        mockMvc.perform(get("/api/v1/student/assignments/1002")
+                .header("Authorization", bearer(4L)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.allowLate").value(true))
+            .andExpect(jsonPath("$.data.displayStatus").value("提交中"))
+            .andExpect(jsonPath("$.data.submissionCloseAt").isNotEmpty());
+
+        mockMvc.perform(post("/api/v1/student/assignments/1002/submit")
+                .header("Authorization", bearer(4L))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "projectName": "Late Personal Portfolio",
+                      "repoUrl": "https://github.com/demo/late-personal-portfolio"
+                    }
+                    """))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.late").value(true));
+    }
+
     private String bearer(Long userId) {
         return "Bearer " + tokenService.issueToken(userId);
     }

@@ -790,10 +790,7 @@ public class BulkDemoDataSeeder implements ApplicationRunner {
     }
 
     private boolean resolveAllowLate(String status, int order) {
-        if ("CLOSED".equals(status)) {
-            return order % 2 == 0;
-        }
-        return order % 3 != 0;
+        return "SUBMITTING".equals(status) && order % 3 != 0;
     }
 
     private LocalDateTime buildDeadline(String status, int order) {

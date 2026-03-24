@@ -22,7 +22,7 @@
 
 - `/api/v1/admin/**`：仅 `ADMIN`
 - `/api/v1/student/**`：仅 `STUDENT`
-- `/api/v1/teacher/**`：`TEACHER` 或 `ADMIN`
+- `/api/v1/teacher/**`：仅 `TEACHER`
 - `/api/v1/files/**`：任意已登录用户
 
 首次登录限制：
@@ -123,6 +123,7 @@
 - `code`：`string`，必填，课程编码
 - `name`：`string`，必填，课程名称
 - `term`：`string`，选填；为空时默认 `2026 春`
+- `courseDeadline`：`string`，选填，格式示例：`2026-06-30T23:59:00`
 
 #### 2.1.4 `CourseMemberRequest`
 
@@ -224,6 +225,7 @@
 - `title`：`string`
 - `mode`：`string`
 - `deadline`：`string`
+- `submissionCloseAt`：`string | null`
 - `status`：`string`
 - `resultsPublished`：`boolean`
 - `resultsPublishedAt`：`string | null`
@@ -232,8 +234,8 @@
 `displayStatus` 当前真实显示口径：
 
 - `SUBMITTING` -> `提交中`
-- `REVIEWING` -> `互评中`
-- 已发布结果 -> `已发布最终成绩`
+- `REVIEWING` -> `学生互评与教师评分中`
+- 已生成最终成绩 -> `最终成绩已生成`
 - 其他状态 -> 原样返回
 
 #### 2.2.3 `CourseCardVo`
@@ -242,6 +244,7 @@
 - `code`：`string`
 - `name`：`string`
 - `term`：`string`
+- `courseDeadline`：`string | null`
 - `roleInCourse`：`string`，可能为 `ADMIN` / `TEACHER` / `STUDENT`
 - `assignmentCount`：`number`
 - `assignments`：`AssignmentSummaryVo[]`
@@ -321,6 +324,7 @@
 - `mode`：`string`
 - `description`：`string`
 - `deadline`：`string`
+- `submissionCloseAt`：`string | null`
 - `allowLate`：`boolean`
 - `peerWeight`：`number`
 - `teacherWeight`：`number`
@@ -361,6 +365,7 @@
 - `scoreType`：`string`，取值为 `REALTIME` 或 `FINAL`
 - `canEvaluate`：`boolean`
 - `evaluated`：`boolean`
+- `ineligibleReason`：`string | null`，当前可能值为 `SELF` / `ALREADY_EVALUATED` / `BLACKLISTED` / `REVIEW_CLOSED`
 - `late`：`boolean`
 
 #### 2.2.15 `EvaluationItemScoreVo`
@@ -377,6 +382,7 @@
 - `projectName`：`string`
 - `evaluatorUserId`：`number`
 - `evaluatorName`：`string`
+- `evaluatorUsername`：`string | null`
 - `evaluatorRole`：`string`
 - `totalScore`：`number`
 - `comment`：`string | null`
@@ -513,7 +519,8 @@
 - `mode`：`string`
 - `displayStatus`：`string`
 - `deadline`：`string | null`
-- `taskType`：`string`，固定为 `DUE_SOON` / `TODO_SUBMIT` / `GO_REVIEW` / `RESULT_AVAILABLE`
+- `submissionCloseAt`：`string | null`
+- `taskType`：`string`，当前真实取值为 `GO_SUBMIT` / `GO_REVIEW` / `RESULT_AVAILABLE`
 - `actionLabel`：`string`
 
 `StudentReviewHighlightVo`
@@ -911,7 +918,8 @@ t1001,测试教师,TEACHER
 {
   "code": "SE2027",
   "name": "软件工程课程设计 2027",
-  "term": "2027 春"
+  "term": "2027 春",
+  "courseDeadline": "2027-06-30T23:59:00"
 }
 ```
 
@@ -930,6 +938,7 @@ t1001,测试教师,TEACHER
     "code": "SE2027",
     "name": "软件工程课程设计 2027",
     "term": "2027 春",
+    "courseDeadline": "2027-06-30 23:59:00",
     "roleInCourse": "ADMIN",
     "assignmentCount": 0,
     "assignments": []
@@ -1082,117 +1091,6 @@ t1001,测试教师,TEACHER
   "timestamp": "2026-03-17 11:47:23"
 }
 ```
-
-### 5.7 创建作业
-
-**接口名称**：创建作业  
-**请求路径**：`/admin/courses/{courseId}/assignments`  
-**请求方式**：`POST`  
-**是否鉴权**：是  
-**适用角色**：`ADMIN`  
-**请求头**：`Content-Type: application/json`
-
-**请求参数**
-
-- Path 参数：
-  - `courseId`：`number`，必填
-- Body：`CreateAssignmentRequest`
-
-**请求示例**
-
-```json
-{
-  "title": "课程项目 Demo",
-  "mode": "GROUP",
-  "description": "支持项目提交、开放互评与 Rubric 评分的课程项目",
-  "deadline": "2026-03-30T23:59:00",
-  "allowLate": true,
-  "peerWeight": 40,
-  "teacherWeight": 60,
-  "status": "SUBMITTING"
-}
-```
-
-**成功响应 `data` 结构**
-
-- `AssignmentDetailVo`
-
-**成功响应示例**
-
-```json
-{
-  "code": 0,
-  "message": "ok",
-  "data": {
-    "id": 1101,
-    "courseId": 101,
-    "courseName": "软件工程课程设计",
-    "title": "课程项目 Demo",
-    "mode": "GROUP",
-    "description": "支持项目提交、开放互评与 Rubric 评分的课程项目",
-    "deadline": "2026-03-30 23:59:00",
-    "allowLate": true,
-    "peerWeight": 40,
-    "teacherWeight": 60,
-    "status": "SUBMITTING",
-    "resultsPublished": false,
-    "resultsPublishedAt": null,
-    "displayStatus": "提交中",
-    "rubric": [
-      {
-        "id": 1,
-        "name": "完成度",
-        "description": "功能是否完整",
-        "weight": 30
-      }
-    ],
-    "studentMembers": [],
-    "myGroup": null,
-    "ungroupedForGroupAssignment": false,
-    "summary": null
-  },
-  "timestamp": "2026-03-17 11:47:23"
-}
-```
-
-### 5.8 更新作业
-
-**接口名称**：更新作业  
-**请求路径**：`/admin/assignments/{assignmentId}`  
-**请求方式**：`PUT`  
-**是否鉴权**：是  
-**适用角色**：`ADMIN`  
-**请求头**：`Content-Type: application/json`
-
-**请求参数**
-
-- Path 参数：
-  - `assignmentId`：`number`，必填
-- Body：`CreateAssignmentRequest`
-
-**请求示例**
-
-```json
-{
-  "title": "课程项目 Demo（更新）",
-  "mode": "GROUP",
-  "description": "更新后的描述",
-  "deadline": "2026-04-01T23:59:00",
-  "allowLate": true,
-  "peerWeight": 40,
-  "teacherWeight": 60,
-  "status": "REVIEWING"
-}
-```
-
-**成功响应 `data` 结构**
-
-- `AssignmentDetailVo`
-
-**业务说明**
-
-- `mode` 会走与创建作业相同的归一化逻辑
-- `status` 没有单独枚举校验，但现有系统按 `SUBMITTING / REVIEWING / CLOSED` 这三种状态运行
 
 ## 6. 学生接口
 
@@ -1803,7 +1701,7 @@ Authorization: Bearer <student-token>
 **业务说明**
 
 - 排行榜是独立分页接口，适合大数据量场景
-- `scoreType` 与当前成绩快照一致；未发布最终成绩前通常显示 `REALTIME`
+- `scoreType` 与当前成绩快照一致；最终成绩自动生成前通常显示 `REALTIME`
 
 ## 7. 教师接口
 
@@ -1813,7 +1711,7 @@ Authorization: Bearer <student-token>
 **请求路径**：`/teacher/courses`  
 **请求方式**：`GET`  
 **是否鉴权**：是  
-**适用角色**：`TEACHER` / `ADMIN`
+**适用角色**：`TEACHER`
 
 **请求参数**
 
@@ -1875,7 +1773,7 @@ Authorization: Bearer <teacher-token>
 **请求路径**：`/teacher/assignments/{assignmentId}`  
 **请求方式**：`GET`  
 **是否鉴权**：是  
-**适用角色**：`TEACHER` / `ADMIN`
+**适用角色**：`TEACHER`
 
 **请求参数**
 
@@ -1948,7 +1846,7 @@ Authorization: Bearer <teacher-token>
 **请求路径**：`/teacher/assignments/{assignmentId}/groups`  
 **请求方式**：`GET`  
 **是否鉴权**：是  
-**适用角色**：`TEACHER` / `ADMIN`
+**适用角色**：`TEACHER`
 
 **请求参数**
 
@@ -2027,7 +1925,7 @@ Authorization: Bearer <teacher-token>
 **请求路径**：`/teacher/assignments/{assignmentId}/groups`  
 **请求方式**：`POST`  
 **是否鉴权**：是  
-**适用角色**：`TEACHER` / `ADMIN`  
+**适用角色**：`TEACHER`  
 **请求头**：`Content-Type: application/json`
 
 **请求参数**
@@ -2088,7 +1986,7 @@ Authorization: Bearer <teacher-token>
 **请求路径**：`/teacher/assignments/{assignmentId}/groups/{groupId}`  
 **请求方式**：`PUT`  
 **是否鉴权**：是  
-**适用角色**：`TEACHER` / `ADMIN`  
+**适用角色**：`TEACHER`  
 **请求头**：`Content-Type: application/json`
 
 **请求参数**
@@ -2155,7 +2053,7 @@ Authorization: Bearer <teacher-token>
 **请求路径**：`/teacher/assignments/{assignmentId}/groups/{groupId}`  
 **请求方式**：`DELETE`  
 **是否鉴权**：是  
-**适用角色**：`TEACHER` / `ADMIN`
+**适用角色**：`TEACHER`
 
 **请求参数**
 
@@ -2195,7 +2093,7 @@ Authorization: Bearer <teacher-token>
 **请求路径**：`/teacher/assignments/{assignmentId}/rubric`  
 **请求方式**：`PUT`  
 **是否鉴权**：是  
-**适用角色**：`TEACHER` / `ADMIN`  
+**适用角色**：`TEACHER`  
 **请求头**：`Content-Type: application/json`
 
 **请求参数**
@@ -2282,7 +2180,7 @@ Authorization: Bearer <teacher-token>
 **请求路径**：`/teacher/assignments/{assignmentId}/submissions`  
 **请求方式**：`GET`  
 **是否鉴权**：是  
-**适用角色**：`TEACHER` / `ADMIN`
+**适用角色**：`TEACHER`
 
 **请求参数**
 
@@ -2348,7 +2246,7 @@ Authorization: Bearer <teacher-token>
 **请求路径**：`/teacher/submissions/{submissionId}/scores`  
 **请求方式**：`POST`  
 **是否鉴权**：是  
-**适用角色**：`TEACHER` / `ADMIN`  
+**适用角色**：`TEACHER`  
 **请求头**：`Content-Type: application/json`
 
 **请求参数**
@@ -2409,7 +2307,7 @@ Authorization: Bearer <teacher-token>
 **请求路径**：`/teacher/assignments/{assignmentId}/evaluations`  
 **请求方式**：`GET`  
 **是否鉴权**：是  
-**适用角色**：`TEACHER` / `ADMIN`
+**适用角色**：`TEACHER`
 
 **请求参数**
 
@@ -2491,7 +2389,7 @@ Authorization: Bearer <teacher-token>
 **请求路径**：`/teacher/evaluations/{evaluationId}/review`  
 **请求方式**：`PATCH`  
 **是否鉴权**：是  
-**适用角色**：`TEACHER` / `ADMIN`
+**适用角色**：`TEACHER`
 
 **请求参数**
 
@@ -2529,7 +2427,7 @@ Authorization: Bearer <teacher-token>
 **请求路径**：`/teacher/assignments/{assignmentId}/blacklist`  
 **请求方式**：`POST`  
 **是否鉴权**：是  
-**适用角色**：`TEACHER` / `ADMIN`
+**适用角色**：`TEACHER`
 
 **请求参数**
 
@@ -2566,7 +2464,7 @@ Authorization: Bearer <teacher-token>
 **请求路径**：`/teacher/assignments/{assignmentId}/blacklist`  
 **请求方式**：`DELETE`  
 **是否鉴权**：是  
-**适用角色**：`TEACHER` / `ADMIN`
+**适用角色**：`TEACHER`
 
 **请求参数**
 
@@ -2591,49 +2489,13 @@ Authorization: Bearer <teacher-token>
 }
 ```
 
-### 7.14 发布最终成绩
-
-**接口名称**：发布最终成绩  
-**请求路径**：`/teacher/assignments/{assignmentId}/publish-results`  
-**请求方式**：`PATCH`  
-**是否鉴权**：是  
-**适用角色**：`TEACHER` / `ADMIN`
-
-**请求参数**
-
-- Path 参数：
-  - `assignmentId`：`number`，必填
-
-**请求示例**
-
-```http
-PATCH /api/v1/teacher/assignments/1001/publish-results
-Authorization: Bearer <teacher-token>
-```
-
-**成功响应 `data` 结构**
-
-```json
-{
-  "published": true,
-  "publishedAt": "2026-03-17 11:47:23",
-  "displayStatus": "已发布最终成绩"
-}
-```
-
-**业务说明**
-
-- 发布后服务端会把作业状态改为 `CLOSED`
-- 同一作业重复发布会返回 `4090`
-- 发布后教师评分、Rubric、黑名单、评分审核、小组都不可再编辑
-
-### 7.15 获取教师统计页数据
+### 7.14 获取教师统计页数据
 
 **接口名称**：获取教师统计页数据  
 **请求路径**：`/teacher/assignments/{assignmentId}/stats`  
 **请求方式**：`GET`  
 **是否鉴权**：是  
-**适用角色**：`TEACHER` / `ADMIN`
+**适用角色**：`TEACHER`
 
 **请求参数**
 
@@ -2747,6 +2609,7 @@ Authorization: Bearer <teacher-token>
 
 - `leaderboard` 在统计页只作为摘要视图使用，默认只展示前几名
 - `abnormalImpacts` 用于说明异常评分被排除后对项目得分的影响
+- `resultsPublished=true` 表示最终成绩已经由系统自动生成，`leaderboardType` 会同步切换为 `FINAL`
 
 ## 8. 典型鉴权失败示例
 

@@ -46,9 +46,9 @@ INSERT IGNORE INTO assignment (
     id, course_id, title, mode, description, deadline, allow_late, peer_weight, teacher_weight, status,
     results_published, results_published_at
 ) VALUES
-(1001, 101, '课程项目 Demo', 'GROUP', '支持项目提交、开放互评与 Rubric 评分的课程项目', DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 2 HOUR), 1, 40, 60, 'REVIEWING', 0, NULL),
+(1001, 101, '课程项目 Demo', 'GROUP', '支持项目提交、开放互评与 Rubric 评分的课程项目', DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 2 HOUR), 0, 40, 60, 'REVIEWING', 0, NULL),
 (1002, 101, '个人展示页', 'INDIVIDUAL', '个人作业模式预留', DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 5 DAY), 1, 30, 70, 'SUBMITTING', 0, NULL),
-(1003, 102, '企业协作平台', 'GROUP', '小组协作平台开发与开放互评', DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 30 HOUR), 1, 50, 50, 'REVIEWING', 0, NULL),
+(1003, 102, '企业协作平台', 'GROUP', '小组协作平台开发与开放互评', DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 30 HOUR), 0, 50, 50, 'REVIEWING', 0, NULL),
 (1004, 102, '交互作品集', 'INDIVIDUAL', '个人交互作品展示页', DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 9 DAY), 1, 30, 70, 'SUBMITTING', 0, NULL),
 (1005, 103, '可视化数据故事', 'GROUP', '围绕真实数据集完成可视化叙事', DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 54 HOUR), 0, 40, 60, 'CLOSED', 0, NULL);
 

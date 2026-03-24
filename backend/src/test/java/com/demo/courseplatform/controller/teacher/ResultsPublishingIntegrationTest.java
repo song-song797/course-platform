@@ -45,19 +45,30 @@ class ResultsPublishingIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void shouldRejectManualPublishAndTeacherReviewAfterAutomaticFinalization() throws Exception {
+    void shouldRejectTeacherReviewAfterAutomaticFinalization() throws Exception {
         setAssignmentDeadlineHoursFromNow(1003L, -50);
-
-        mockMvc.perform(patch("/api/v1/teacher/assignments/1003/publish-results")
-                .header("Authorization", bearer(2L)))
-            .andExpect(status().isConflict())
-            .andExpect(jsonPath("$.code").value(4090));
 
         mockMvc.perform(patch("/api/v1/teacher/evaluations/8021/review")
                 .header("Authorization", bearer(2L))
                 .param("excluded", "true"))
             .andExpect(status().isConflict())
             .andExpect(jsonPath("$.code").value(4090));
+    }
+
+    @Test
+    void shouldBuildScoreDistributionFromProjectScores() throws Exception {
+        setAssignmentDeadlineHoursFromNow(1001L, -2);
+
+        mockMvc.perform(get("/api/v1/teacher/assignments/1001/stats")
+                .header("Authorization", bearer(2L)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.totalSubmissions").value(3))
+            .andExpect(jsonPath("$.data.scoreDistribution[0].name").value("90-100"))
+            .andExpect(jsonPath("$.data.scoreDistribution[0].value").value(1.0))
+            .andExpect(jsonPath("$.data.scoreDistribution[1].name").value("80-89"))
+            .andExpect(jsonPath("$.data.scoreDistribution[1].value").value(2.0))
+            .andExpect(jsonPath("$.data.scoreDistribution[2].name").value("<80"))
+            .andExpect(jsonPath("$.data.scoreDistribution[2].value").value(0.0));
     }
 
     private String bearer(Long userId) {

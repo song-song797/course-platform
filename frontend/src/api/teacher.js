@@ -1,6 +1,8 @@
 import http from './http'
 
 export const getTeacherCourses = (params) => http.get('/teacher/courses', { params })
+export const createTeacherCourse = (payload) => http.post('/teacher/courses', payload)
+export const createTeacherAssignment = (courseId, payload) => http.post(`/teacher/courses/${courseId}/assignments`, payload)
 export const getTeacherAssignment = (assignmentId) => http.get(`/teacher/assignments/${assignmentId}`)
 export const getTeacherGroups = (assignmentId) => http.get(`/teacher/assignments/${assignmentId}/groups`)
 export const createTeacherGroup = (assignmentId, payload) => http.post(`/teacher/assignments/${assignmentId}/groups`, payload)
@@ -15,5 +17,4 @@ export const addBlacklist = (assignmentId, evaluatorUserId, targetSubmissionId) 
   http.post(`/teacher/assignments/${assignmentId}/blacklist`, null, { params: { evaluatorUserId, targetSubmissionId } })
 export const removeBlacklist = (assignmentId, evaluatorUserId, targetSubmissionId) =>
   http.delete(`/teacher/assignments/${assignmentId}/blacklist`, { params: { evaluatorUserId, targetSubmissionId } })
-export const publishResults = (assignmentId) => http.patch(`/teacher/assignments/${assignmentId}/publish-results`)
 export const getTeacherStats = (assignmentId) => http.get(`/teacher/assignments/${assignmentId}/stats`)

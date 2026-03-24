@@ -54,6 +54,11 @@ public class DemoPlatformService {
     private static final String REVIEW_STATUS_PENDING = "PENDING";
     private static final String REVIEW_STATUS_IGNORED = "IGNORED";
     private static final String REVIEW_STATUS_RESTORED = "RESTORED";
+    private static final String PROJECT_INELIGIBLE_SELF = "SELF";
+    private static final String PROJECT_INELIGIBLE_ALREADY_EVALUATED = "ALREADY_EVALUATED";
+    private static final String PROJECT_INELIGIBLE_BLACKLISTED = "BLACKLISTED";
+    private static final String PROJECT_INELIGIBLE_REVIEW_CLOSED = "REVIEW_CLOSED";
+    private static final long LATE_SUBMISSION_GRACE_HOURS = 24L;
     private static final long PEER_REVIEW_DURATION_HOURS = 24L;
     private static final long TEACHER_REVIEW_DURATION_HOURS = 48L;
 
@@ -166,6 +171,7 @@ public class DemoPlatformService {
             SubmissionEntity mySubmission = submissionMapper.findSubmissionByAssignmentAndUser(assignment.id, userId);
             String displayStatus = resolveDisplayStatus(assignment);
             String deadline = formatDateTime(assignment.deadline);
+            String submissionCloseAt = formatDateTime(resolveSubmissionCloseAt(assignment));
 
             if (isSubmissionOpen(assignment) && mySubmission == null) {
                 pendingSubmissionCount++;
@@ -177,7 +183,8 @@ public class DemoPlatformService {
                     assignment.mode,
                     displayStatus,
                     deadline,
-                    isDueSoon(assignment.deadline) ? "DUE_SOON" : "TODO_SUBMIT",
+                    submissionCloseAt,
+                    "GO_SUBMIT",
                     "去提交"
                 );
                 if (isDueSoon(assignment.deadline)) {
@@ -217,6 +224,7 @@ public class DemoPlatformService {
                             assignment.mode,
                             displayStatus,
                         deadline,
+                        submissionCloseAt,
                         "GO_REVIEW",
                         "去互评"
                     ));
@@ -254,6 +262,7 @@ public class DemoPlatformService {
                         assignment.title,
                         assignment.mode,
                         "最近出分",
+                        formatDateTime(resolvePublishedAt(assignment)),
                         formatDateTime(resolvePublishedAt(assignment)),
                         "RESULT_AVAILABLE",
                         "看结果"
@@ -325,7 +334,7 @@ public class DemoPlatformService {
     @Transactional
     public DemoViews.CourseCardVo createCourseAsTeacher(Long teacherUserId, DemoRequests.CreateCourseRequest request) {
         UserEntity user = requireUser(teacherUserId);
-        if (!"TEACHER".equals(user.role) && !"ADMIN".equals(user.role)) {
+        if (!"TEACHER".equals(user.role)) {
             throw new ForbiddenException("无权创建课程");
         }
 
@@ -336,13 +345,11 @@ public class DemoPlatformService {
         course.courseDeadline = parseOptionalDateTime(request.courseDeadline());
         courseMapper.insert(course);
 
-        if ("TEACHER".equals(user.role)) {
-            CourseMemberEntity member = new CourseMemberEntity();
-            member.courseId = course.id;
-            member.userId = teacherUserId;
-            member.courseRole = "TEACHER";
-            courseMapper.insertMember(member);
-        }
+        CourseMemberEntity member = new CourseMemberEntity();
+        member.courseId = course.id;
+        member.userId = teacherUserId;
+        member.courseRole = "TEACHER";
+        courseMapper.insertMember(member);
 
         return new DemoViews.CourseCardVo(
             course.id,
@@ -350,7 +357,7 @@ public class DemoPlatformService {
             course.name,
             course.term,
             formatDateTime(course.courseDeadline),
-            "ADMIN".equals(user.role) ? "ADMIN" : "TEACHER",
+            "TEACHER",
             0,
             List.of()
         );
@@ -653,10 +660,7 @@ public class DemoPlatformService {
         validateSubmissionRequest(request);
 
         LocalDateTime now = LocalDateTime.now();
-        boolean late = now.isAfter(assignment.deadline);
-        if (late) {
-            throw new IllegalStateException("当前作业已截止，已进入评分阶段");
-        }
+        boolean late = assignment.deadline != null && now.isAfter(assignment.deadline);
 
         AssignmentGroupEntity group = resolveSubmissionGroup(userId, assignment);
         SubmissionEntity submission = submissionMapper.findSubmissionByGroupId(group.id);
@@ -712,7 +716,9 @@ public class DemoPlatformService {
                 boolean isSelfProject = submissionMemberIds.contains(userId);
                 boolean evaluated = evaluatedSubmissionIds.contains(submission.id);
                 boolean blocked = blacklistedSubmissionIds.contains(submission.id);
-                boolean canEvaluate = isPeerReviewOpen(assignment) && !isSelfProject && !evaluated && !blocked;
+                boolean reviewOpen = isPeerReviewOpen(assignment);
+                boolean canEvaluate = reviewOpen && !isSelfProject && !evaluated && !blocked;
+                String ineligibleReason = resolveProjectIneligibleReason(reviewOpen, isSelfProject, evaluated, blocked);
                 return new DemoViews.ProjectCardVo(
                     submission.id,
                     submission.projectName,
@@ -726,6 +732,7 @@ public class DemoPlatformService {
                     snapshot.leaderboardType(),
                     canEvaluate,
                     evaluated,
+                    ineligibleReason,
                     submission.late
                 );
             })
@@ -819,7 +826,7 @@ public class DemoPlatformService {
         AssignmentEntity assignment = requireAssignment(submission.assignmentId);
         ensureTeacherAssignmentAccess(userId, assignment);
         ensureResultsUnpublished(assignment, "最终成绩已生成，不能再修改教师评分");
-        if (!isTeacherReviewOpen(assignment)) {
+        if (!isTeacherScoringEditable(assignment)) {
             throw new IllegalStateException("当前作业不在教师评分阶段");
         }
 
@@ -936,6 +943,7 @@ public class DemoPlatformService {
                     submission == null ? "未知项目" : submission.projectName,
                     evaluation.evaluatorUserId,
                     evaluator == null ? "未知用户" : evaluator.displayName,
+                    evaluator == null ? null : evaluator.username,
                     evaluation.evaluatorRole,
                     scoreCalculator.round(evaluation.totalScore.doubleValue()),
                     evaluation.comment,
@@ -1049,10 +1057,14 @@ public class DemoPlatformService {
             .count();
         int abnormalHandledCount = abnormalIgnoredCount + abnormalRestoredCount;
 
+        List<Double> visibleProjectScores = snapshot.projectScores().values().stream()
+            .map(bundle -> bundle.displayScore(snapshot.published()))
+            .filter(Objects::nonNull)
+            .toList();
         List<DemoViews.MetricVo> scoreDistribution = List.of(
-            new DemoViews.MetricVo("90-100", (double) evaluations.stream().filter(item -> !item.excluded && item.totalScore.doubleValue() >= 90D).count()),
-            new DemoViews.MetricVo("80-89", (double) evaluations.stream().filter(item -> !item.excluded && item.totalScore.doubleValue() >= 80D && item.totalScore.doubleValue() < 90D).count()),
-            new DemoViews.MetricVo("<80", (double) evaluations.stream().filter(item -> !item.excluded && item.totalScore.doubleValue() < 80D).count())
+            new DemoViews.MetricVo("90-100", (double) visibleProjectScores.stream().filter(score -> score >= 90D).count()),
+            new DemoViews.MetricVo("80-89", (double) visibleProjectScores.stream().filter(score -> score >= 80D && score < 90D).count()),
+            new DemoViews.MetricVo("<80", (double) visibleProjectScores.stream().filter(score -> score < 80D).count())
         );
 
         CourseEntity course = requireCourse(assignment.courseId);
@@ -1144,13 +1156,6 @@ public class DemoPlatformService {
         return Map.of("reviewed", true, "excluded", excluded, "reviewStatus", reviewStatus);
     }
 
-    @Transactional
-    public Map<String, Object> publishResults(Long teacherUserId, Long assignmentId) {
-        AssignmentEntity assignment = requireAssignment(assignmentId);
-        ensureTeacherAssignmentAccess(teacherUserId, assignment);
-        throw new IllegalStateException("系统已改为自动出分，无需手动发布最终成绩");
-    }
-
     private List<DemoViews.CourseCardVo> buildCourseCards(List<CourseEntity> courses,
                                                           java.util.function.Function<CourseEntity, String> roleResolver) {
         if (courses.isEmpty()) {
@@ -1170,6 +1175,7 @@ public class DemoPlatformService {
                         item.title,
                         item.mode,
                         formatDateTime(item.deadline),
+                        formatDateTime(resolveSubmissionCloseAt(item)),
                         resolveAssignmentStatus(item),
                         isResultsPublished(item),
                         formatDateTime(resolvePublishedAt(item)),
@@ -1217,6 +1223,7 @@ public class DemoPlatformService {
             assignment.mode,
             assignment.description,
             formatDateTime(assignment.deadline),
+            formatDateTime(resolveSubmissionCloseAt(assignment)),
             assignment.allowLate,
             assignment.peerWeight,
             assignment.teacherWeight,
@@ -1583,20 +1590,13 @@ public class DemoPlatformService {
 
     private void ensureTeacherAssignmentAccess(Long userId, AssignmentEntity assignment) {
         UserEntity user = requireUser(userId);
-        if ("ADMIN".equals(user.role)) {
-            return;
-        }
-        if (!hasCourseRole(assignment.courseId, userId, "TEACHER")) {
+        if (!"TEACHER".equals(user.role) || !hasCourseRole(assignment.courseId, userId, "TEACHER")) {
             throw new ForbiddenException("无权访问该教师作业");
         }
     }
 
     private void ensureTeacherCourseAccess(Long userId, Long courseId) {
         UserEntity user = requireUser(userId);
-        if ("ADMIN".equals(user.role)) {
-            requireCourse(courseId);
-            return;
-        }
         if (!"TEACHER".equals(user.role) || !hasCourseRole(courseId, userId, "TEACHER")) {
             throw new ForbiddenException("当前用户不是该课程教师，不能创建作业");
         }
@@ -1880,6 +1880,22 @@ public class DemoPlatformService {
         return "GROUP".equalsIgnoreCase(mode) ? "GROUP" : "INDIVIDUAL";
     }
 
+    private String resolveProjectIneligibleReason(boolean reviewOpen, boolean isSelfProject, boolean evaluated, boolean blocked) {
+        if (isSelfProject) {
+            return PROJECT_INELIGIBLE_SELF;
+        }
+        if (evaluated) {
+            return PROJECT_INELIGIBLE_ALREADY_EVALUATED;
+        }
+        if (blocked) {
+            return PROJECT_INELIGIBLE_BLACKLISTED;
+        }
+        if (!reviewOpen) {
+            return PROJECT_INELIGIBLE_REVIEW_CLOSED;
+        }
+        return null;
+    }
+
     private boolean isResultsPublished(AssignmentEntity assignment) {
         AssignmentTimeline timeline = resolveAssignmentTimeline(assignment);
         if (assignment.resultsPublished) {
@@ -1951,6 +1967,13 @@ public class DemoPlatformService {
         return raw == null || raw.isBlank() ? null : LocalDateTime.parse(raw);
     }
 
+    private LocalDateTime resolveSubmissionCloseAt(AssignmentEntity assignment) {
+        if (assignment.deadline == null) {
+            return null;
+        }
+        return assignment.allowLate ? assignment.deadline.plusHours(LATE_SUBMISSION_GRACE_HOURS) : assignment.deadline;
+    }
+
     private void validateAssignmentDeadline(CourseEntity course, LocalDateTime assignmentDeadline) {
         if (course.courseDeadline != null && assignmentDeadline.isAfter(course.courseDeadline)) {
             throw new IllegalArgumentException("作业截止时间不能晚于课程截止时间");
@@ -2019,11 +2042,23 @@ public class DemoPlatformService {
         return !now.isBefore(timeline.reviewStartAt()) && now.isBefore(timeline.teacherReviewEndAt());
     }
 
+    private boolean isTeacherScoringEditable(AssignmentEntity assignment) {
+        if (isResultsPublished(assignment) || assignment.deadline == null) {
+            return false;
+        }
+        AssignmentTimeline timeline = resolveAssignmentTimeline(assignment);
+        if (timeline.teacherReviewEndAt() == null) {
+            return false;
+        }
+        LocalDateTime now = LocalDateTime.now();
+        return !now.isBefore(assignment.deadline) && now.isBefore(timeline.teacherReviewEndAt());
+    }
+
     private AssignmentTimeline resolveAssignmentTimeline(AssignmentEntity assignment) {
-        LocalDateTime submissionDeadline = assignment.deadline;
+        LocalDateTime submissionDeadline = resolveSubmissionCloseAt(assignment);
         LocalDateTime reviewStartAt = submissionDeadline;
         LocalDateTime peerReviewEndAt = reviewStartAt == null ? null : reviewStartAt.plusHours(PEER_REVIEW_DURATION_HOURS);
-        LocalDateTime teacherReviewEndAt = reviewStartAt == null ? null : reviewStartAt.plusHours(TEACHER_REVIEW_DURATION_HOURS);
+        LocalDateTime teacherReviewEndAt = assignment.deadline == null ? null : assignment.deadline.plusHours(TEACHER_REVIEW_DURATION_HOURS);
         LocalDateTime finalScoreAt = teacherReviewEndAt;
         return new AssignmentTimeline(submissionDeadline, reviewStartAt, peerReviewEndAt, teacherReviewEndAt, finalScoreAt);
     }
