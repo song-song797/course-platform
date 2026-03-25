@@ -21,7 +21,7 @@ public final class DemoRequests {
     public record ChangePasswordRequest(@NotBlank String newPassword) {
     }
 
-    public record CreateCourseRequest(@NotBlank String code, @NotBlank String name, String term) {
+    public record CreateCourseRequest(@NotBlank String code, @NotBlank String name, String term, String courseDeadline) {
     }
 
     public record CourseMemberRequest(@NotNull Long userId, @NotBlank String courseRole) {

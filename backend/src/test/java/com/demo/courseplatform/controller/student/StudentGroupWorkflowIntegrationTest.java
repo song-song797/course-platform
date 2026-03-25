@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -17,7 +18,7 @@ class StudentGroupWorkflowIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void shouldRejectGroupSubmissionForUngroupedStudent() throws Exception {
-        jdbcTemplate.update("UPDATE assignment SET status = 'SUBMITTING' WHERE id = 1001");
+        setAssignmentDeadlineHoursFromNow(1001L, 24);
 
         mockMvc.perform(post("/api/v1/student/assignments/1001/submit")
                 .header("Authorization", bearer(10L))
@@ -35,7 +36,7 @@ class StudentGroupWorkflowIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void shouldIgnoreForgedMemberListAndBindSubmissionToRealGroup() throws Exception {
-        jdbcTemplate.update("UPDATE assignment SET status = 'SUBMITTING' WHERE id = 1001");
+        setAssignmentDeadlineHoursFromNow(1001L, 24);
 
         mockMvc.perform(post("/api/v1/student/assignments/1001/submit")
                 .header("Authorization", bearer(4L))
@@ -74,6 +75,8 @@ class StudentGroupWorkflowIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void shouldAllowUngroupedStudentToEvaluateOtherGroups() throws Exception {
+        setAssignmentDeadlineHoursFromNow(1001L, -2);
+
         mockMvc.perform(post("/api/v1/student/projects/5002/evaluations")
                 .header("Authorization", bearer(10L))
                 .contentType(MediaType.APPLICATION_JSON)
@@ -90,6 +93,30 @@ class StudentGroupWorkflowIntegrationTest extends AbstractIntegrationTest {
                     """))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data.saved").value(true));
+    }
+
+    @Test
+    void shouldExposeExplicitIneligibleReasonsInProjectSquare() throws Exception {
+        setAssignmentDeadlineHoursFromNow(1001L, -2);
+
+        mockMvc.perform(get("/api/v1/student/assignments/1001/projects")
+                .header("Authorization", bearer(3L)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.list[0].projectName").value("Campus Pair"))
+            .andExpect(jsonPath("$.data.list[0].canEvaluate").value(false))
+            .andExpect(jsonPath("$.data.list[0].ineligibleReason").value("SELF"))
+            .andExpect(jsonPath("$.data.list[1].projectName").value("Sprint Board"))
+            .andExpect(jsonPath("$.data.list[1].canEvaluate").value(false))
+            .andExpect(jsonPath("$.data.list[1].ineligibleReason").value("ALREADY_EVALUATED"));
+
+        mockMvc.perform(get("/api/v1/student/assignments/1001/projects")
+                .header("Authorization", bearer(10L)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.list[0].projectName").value("Campus Pair"))
+            .andExpect(jsonPath("$.data.list[0].canEvaluate").value(false))
+            .andExpect(jsonPath("$.data.list[0].ineligibleReason").value("BLACKLISTED"))
+            .andExpect(jsonPath("$.data.list[1].projectName").value("Sprint Board"))
+            .andExpect(jsonPath("$.data.list[1].canEvaluate").value(true));
     }
 
     private String bearer(Long userId) {

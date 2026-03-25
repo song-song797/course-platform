@@ -46,11 +46,11 @@ INSERT IGNORE INTO assignment (
     id, course_id, title, mode, description, deadline, allow_late, peer_weight, teacher_weight, status,
     results_published, results_published_at
 ) VALUES
-(1001, 101, '课程项目协作实践', 'GROUP', '支持项目提交、开放互评与 Rubric 评分的课程项目', '2026-03-30 23:59:00', 1, 40, 60, 'REVIEWING', 0, NULL),
-(1002, 101, '个人展示页', 'INDIVIDUAL', '个人作业模式预留', '2026-04-05 23:59:00', 1, 30, 70, 'SUBMITTING', 0, NULL),
-(1003, 102, '企业协作平台', 'GROUP', '小组协作平台开发与开放互评', '2026-04-10 23:59:00', 1, 50, 50, 'REVIEWING', 0, NULL),
-(1004, 102, '交互作品集', 'INDIVIDUAL', '个人交互作品展示页', '2026-04-18 23:59:00', 1, 30, 70, 'SUBMITTING', 0, NULL),
-(1005, 103, '可视化数据故事', 'GROUP', '围绕真实数据集完成可视化叙事', '2026-03-20 23:59:00', 0, 40, 60, 'CLOSED', 1, '2026-03-16 18:00:00');
+(1001, 101, '课程项目 Demo', 'GROUP', '支持项目提交、开放互评与 Rubric 评分的课程项目', DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 2 HOUR), 0, 40, 60, 'REVIEWING', 0, NULL),
+(1002, 101, '个人展示页', 'INDIVIDUAL', '个人作业模式预留', DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 5 DAY), 1, 30, 70, 'SUBMITTING', 0, NULL),
+(1003, 102, '企业协作平台', 'GROUP', '小组协作平台开发与开放互评', DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 30 HOUR), 0, 50, 50, 'REVIEWING', 0, NULL),
+(1004, 102, '交互作品集', 'INDIVIDUAL', '个人交互作品展示页', DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 9 DAY), 1, 30, 70, 'SUBMITTING', 0, NULL),
+(1005, 103, '可视化数据故事', 'GROUP', '围绕真实数据集完成可视化叙事', DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 54 HOUR), 0, 40, 60, 'CLOSED', 0, NULL);
 
 INSERT IGNORE INTO rubric (id, assignment_id, version_no, is_active) VALUES
 (4001, 1001, 1, 1),
@@ -108,14 +108,14 @@ INSERT IGNORE INTO assignment_group_member (id, assignment_id, group_id, user_id
 (5014, 1005, 3008, 14);
 
 INSERT IGNORE INTO submission (id, assignment_id, group_id, project_name, repo_url, video_url, preview_url, doc_url, attachment_url, description, submitted_by, submitted_at, is_late) VALUES
-(5001, 1001, 3001, 'Campus Pair', 'https://github.com/course-platform-lab/campus-pair', 'https://www.bilibili.com/video/BV1xx411c7mD', 'https://assets.course-platform.local/previews/campus-pair', 'https://assets.course-platform.local/docs/campus-pair', 'https://assets.course-platform.local/files/campus-pair.pdf', '校园互助结对项目', 3, '2026-03-15 18:00:00', 0),
-(5002, 1001, 3002, 'Sprint Board', 'https://github.com/course-platform-lab/sprint-board', 'https://www.bilibili.com/video/BV1xx411c7mD', 'https://assets.course-platform.local/previews/sprint-board', 'https://assets.course-platform.local/docs/sprint-board', 'https://assets.course-platform.local/files/sprint-board.pdf', '敏捷任务板', 5, '2026-03-15 18:30:00', 0),
-(5003, 1001, 3003, 'Studio Review', 'https://github.com/course-platform-lab/studio-review', 'https://www.bilibili.com/video/BV1xx411c7mD', 'https://assets.course-platform.local/previews/studio-review', 'https://assets.course-platform.local/docs/studio-review', 'https://assets.course-platform.local/files/studio-review.pdf', '开放互评实验室', 6, '2026-03-15 19:00:00', 0),
-(5004, 1003, 3004, 'Flow Forge', 'https://github.com/course-platform-lab/flow-forge', 'https://www.bilibili.com/video/BV1xx411c7mD', 'https://assets.course-platform.local/previews/flow-forge', 'https://assets.course-platform.local/docs/flow-forge', 'https://assets.course-platform.local/files/flow-forge.pdf', '企业流程协作平台', 3, '2026-03-16 10:30:00', 0),
-(5005, 1003, 3005, 'Task Bridge', 'https://github.com/course-platform-lab/task-bridge', 'https://www.bilibili.com/video/BV1xx411c7mD', 'https://assets.course-platform.local/previews/task-bridge', 'https://assets.course-platform.local/docs/task-bridge', 'https://assets.course-platform.local/files/task-bridge.pdf', '跨团队任务协同平台', 4, '2026-03-16 11:10:00', 0),
-(5006, 1003, 3006, 'Pixel Crew', 'https://github.com/course-platform-lab/pixel-crew', 'https://www.bilibili.com/video/BV1xx411c7mD', 'https://assets.course-platform.local/previews/pixel-crew', 'https://assets.course-platform.local/docs/pixel-crew', 'https://assets.course-platform.local/files/pixel-crew.pdf', '视觉化协作工作台', 11, '2026-03-16 11:45:00', 1),
-(5007, 1005, 3007, 'Chart Narrative', 'https://github.com/course-platform-lab/chart-narrative', 'https://www.bilibili.com/video/BV1xx411c7mD', 'https://assets.course-platform.local/previews/chart-narrative', 'https://assets.course-platform.local/docs/chart-narrative', 'https://assets.course-platform.local/files/chart-narrative.pdf', '面向教学数据的可视化叙事项目', 5, '2026-03-14 20:20:00', 0),
-(5008, 1005, 3008, 'Insight Lab', 'https://github.com/course-platform-lab/insight-lab', 'https://www.bilibili.com/video/BV1xx411c7mD', 'https://assets.course-platform.local/previews/insight-lab', 'https://assets.course-platform.local/docs/insight-lab', 'https://assets.course-platform.local/files/insight-lab.pdf', '数据洞察与图表实验室', 6, '2026-03-14 21:00:00', 0);
+(5001, 1001, 3001, 'Campus Pair', 'https://github.com/demo/campus-pair', 'https://www.bilibili.com/video/BV1xx411c7mD', 'https://example.com/campus-pair', 'https://example.com/docs/campus-pair', 'https://example.com/files/campus-pair.pdf', '校园互助结对项目', 3, '2026-03-15 18:00:00', 0),
+(5002, 1001, 3002, 'Sprint Board', 'https://github.com/demo/sprint-board', 'https://www.bilibili.com/video/BV1xx411c7mD', 'https://example.com/sprint-board', 'https://example.com/docs/sprint-board', 'https://example.com/files/sprint-board.pdf', '敏捷任务板', 5, '2026-03-15 18:30:00', 0),
+(5003, 1001, 3003, 'Studio Review', 'https://github.com/demo/studio-review', 'https://www.bilibili.com/video/BV1xx411c7mD', 'https://example.com/studio-review', 'https://example.com/docs/studio-review', 'https://example.com/files/studio-review.pdf', '开放互评实验室', 6, '2026-03-15 19:00:00', 0),
+(5004, 1003, 3004, 'Flow Forge', 'https://github.com/demo/flow-forge', 'https://www.bilibili.com/video/BV1xx411c7mD', 'https://example.com/flow-forge', 'https://example.com/docs/flow-forge', 'https://example.com/files/flow-forge.pdf', '企业流程协作平台', 3, '2026-03-16 10:30:00', 0),
+(5005, 1003, 3005, 'Task Bridge', 'https://github.com/demo/task-bridge', 'https://www.bilibili.com/video/BV1xx411c7mD', 'https://example.com/task-bridge', 'https://example.com/docs/task-bridge', 'https://example.com/files/task-bridge.pdf', '跨团队任务协同平台', 4, '2026-03-16 11:10:00', 0),
+(5006, 1003, 3006, 'Pixel Crew', 'https://github.com/demo/pixel-crew', 'https://www.bilibili.com/video/BV1xx411c7mD', 'https://example.com/pixel-crew', 'https://example.com/docs/pixel-crew', 'https://example.com/files/pixel-crew.pdf', '视觉化协作工作台', 11, '2026-03-16 11:45:00', 1),
+(5007, 1005, 3007, 'Chart Narrative', 'https://github.com/demo/chart-narrative', 'https://www.bilibili.com/video/BV1xx411c7mD', 'https://example.com/chart-narrative', 'https://example.com/docs/chart-narrative', 'https://example.com/files/chart-narrative.pdf', '面向教学数据的可视化叙事项目', 5, '2026-03-14 20:20:00', 0),
+(5008, 1005, 3008, 'Insight Lab', 'https://github.com/demo/insight-lab', 'https://www.bilibili.com/video/BV1xx411c7mD', 'https://example.com/insight-lab', 'https://example.com/docs/insight-lab', 'https://example.com/files/insight-lab.pdf', '数据洞察与图表实验室', 6, '2026-03-14 21:00:00', 0);
 
 INSERT IGNORE INTO evaluation (id, assignment_id, submission_id, evaluator_user_id, evaluator_role, total_score, comment, is_abnormal, abnormal_reason, is_excluded, review_status, created_at) VALUES
 (8001, 1001, 5001, 2, 'TEACHER', 88.00, '整体结构比较完整。', 0, NULL, 0, 'PENDING', '2026-03-16 10:00:00'),

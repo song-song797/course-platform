@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,8 +31,13 @@ public class FileController {
         String filename = UUID.randomUUID() + "-" + file.getOriginalFilename();
         Path target = Paths.get(uploadDir).resolve(filename);
         Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+        String publicPath = "/uploads/" + filename;
+        String publicUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
+            .path(publicPath)
+            .toUriString();
         return ApiResponse.success(Map.of(
-            "url", "/uploads/" + filename,
+            "url", publicUrl,
+            "path", publicPath,
             "originalName", file.getOriginalFilename() == null ? filename : file.getOriginalFilename()
         ));
     }

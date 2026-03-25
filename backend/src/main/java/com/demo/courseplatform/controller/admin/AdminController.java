@@ -11,7 +11,6 @@ import java.util.Map;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -59,17 +58,5 @@ public class AdminController {
     @DeleteMapping("/courses/{courseId}/members/{userId}")
     public ApiResponse<Map<String, Object>> removeCourseMember(@PathVariable Long courseId, @PathVariable Long userId) {
         return ApiResponse.success(demoPlatformService.removeCourseMember(courseId, userId));
-    }
-
-    @PostMapping("/courses/{courseId}/assignments")
-    public ApiResponse<DemoViews.AssignmentDetailVo> createAssignment(@PathVariable Long courseId,
-                                                                      @Valid @RequestBody DemoRequests.CreateAssignmentRequest request) {
-        return ApiResponse.success(demoPlatformService.createAssignment(courseId, request));
-    }
-
-    @PutMapping("/assignments/{assignmentId}")
-    public ApiResponse<DemoViews.AssignmentDetailVo> updateAssignment(@PathVariable Long assignmentId,
-                                                                      @Valid @RequestBody DemoRequests.CreateAssignmentRequest request) {
-        return ApiResponse.success(demoPlatformService.updateAssignment(assignmentId, request));
     }
 }

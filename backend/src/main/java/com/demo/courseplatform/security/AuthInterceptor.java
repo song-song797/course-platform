@@ -53,8 +53,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         if (requestUri.startsWith("/api/v1/admin/") && !"ADMIN".equals(user.role)) {
             throw new ForbiddenException("无权访问管理员接口");
         }
-        if (requestUri.startsWith("/api/v1/teacher/")
-            && !("TEACHER".equals(user.role) || "ADMIN".equals(user.role))) {
+        if (requestUri.startsWith("/api/v1/teacher/") && !"TEACHER".equals(user.role)) {
             throw new ForbiddenException("无权访问教师接口");
         }
         if (requestUri.startsWith("/api/v1/student/") && !"STUDENT".equals(user.role)) {

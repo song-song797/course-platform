@@ -45,9 +45,11 @@ public class BulkDemoDataSeeder implements ApplicationRunner {
     private static final List<Long> BASE_COURSE_IDS = List.of(101L, 102L, 103L);
     private static final String BULK_USERNAME_PREFIX = "bulk_";
     private static final String BULK_COURSE_CODE_PREFIX = "BULK-C";
-    private static final String LEGACY_BULK_ASSIGNMENT_TITLE_PREFIX = "BULK-DEMO | ";
-    private static final String BULK_ASSIGNMENT_TITLE_PREFIX = "课程项目 | ";
-    private static final String BULK_PROJECT_NAME_PREFIX = "课程作品 | ";
+    private static final String LEGACY_BULK_ASSIGNMENT_TITLE_PREFIX = "\u8bfe\u7a0b\u9879\u76ee | ";
+    private static final String BULK_ASSIGNMENT_TITLE_PREFIX = "BULK-DEMO | ";
+    private static final String BULK_PROJECT_NAME_PREFIX = "Bulk Demo | ";
+    private static final List<String> BULK_ASSIGNMENT_TITLE_PREFIXES =
+        List.of(LEGACY_BULK_ASSIGNMENT_TITLE_PREFIX, BULK_ASSIGNMENT_TITLE_PREFIX);
     private static final int TEACHERS_PER_COURSE = 2;
     private static final int FIRST_SCREEN_COURSE_TARGET = 10;
     private static final int FIRST_SCREEN_MIN_ASSIGNMENTS = 3;
@@ -189,7 +191,6 @@ public class BulkDemoDataSeeder implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
-        normalizeExistingSeedContent();
         validateConfiguration();
         if (properties.isResetBeforeSeed()) {
             cleanupBulkData();
@@ -212,44 +213,16 @@ public class BulkDemoDataSeeder implements ApplicationRunner {
         long totalAssignments = assignments.size() + currentAssignmentCount;
         long totalSubmissions = assignments.stream().mapToLong(item -> item.submissions.size()).sum() + countExistingSubmissions();
         long totalEvaluations = assignments.stream().mapToLong(item -> item.generatedEvaluationCount).sum() + countExistingEvaluations();
-        log.info("课程项目样例数据已准备完成: totalCourses={}, totalAssignments={}, totalSubmissions={}, totalEvaluations={}",
+        log.info("Bulk demo data prepared: totalCourses={}, totalAssignments={}, totalSubmissions={}, totalEvaluations={}",
             courseSeeds.size(), totalAssignments, totalSubmissions, totalEvaluations);
-    }
-
-    private void normalizeExistingSeedContent() {
-        jdbcTemplate.update("""
-            UPDATE assignment
-            SET title = ?
-            WHERE title = ?
-            """, "课程项目协作实践", "课程项目 Demo");
-        jdbcTemplate.update("""
-            UPDATE submission
-            SET repo_url = REPLACE(repo_url, 'https://github.com/demo/', 'https://github.com/course-platform-lab/')
-            WHERE repo_url LIKE 'https://github.com/demo/%'
-            """);
-        jdbcTemplate.update("""
-            UPDATE submission
-            SET preview_url = REPLACE(preview_url, 'https://example.com/', 'https://assets.course-platform.local/previews/')
-            WHERE preview_url LIKE 'https://example.com/%'
-            """);
-        jdbcTemplate.update("""
-            UPDATE submission
-            SET doc_url = REPLACE(doc_url, 'https://example.com/docs/', 'https://assets.course-platform.local/docs/')
-            WHERE doc_url LIKE 'https://example.com/docs/%'
-            """);
-        jdbcTemplate.update("""
-            UPDATE submission
-            SET attachment_url = REPLACE(attachment_url, 'https://example.com/files/', 'https://assets.course-platform.local/files/')
-            WHERE attachment_url LIKE 'https://example.com/files/%'
-            """);
     }
 
     private void validateConfiguration() {
         if (properties.getCourseCount() < BASE_COURSE_IDS.size()) {
-            throw new IllegalStateException("课程样例配置的课程数不能小于基础课程数");
+            throw new IllegalStateException("bulk demo 配置的课程数不能小于基础课程数");
         }
         if (properties.getAssignmentCount() < 5) {
-            throw new IllegalStateException("课程样例配置的作业数不能小于基础作业数");
+            throw new IllegalStateException("bulk demo 配置的作业数不能小于基础演示作业数");
         }
         if (properties.getReviewingAssignmentCount() < 1 || properties.getClosedAssignmentCount() < 1) {
             throw new IllegalStateException("reviewingAssignmentCount 和 closedAssignmentCount 必须大于 0");
@@ -384,7 +357,7 @@ public class BulkDemoDataSeeder implements ApplicationRunner {
     }
 
     private void cleanupBulkData() {
-        Object[] titlePatterns = seedAssignmentTitleLikePatterns();
+        Object[] titlePatterns = bulkAssignmentTitleLikePatterns();
         jdbcTemplate.update("""
             DELETE FROM evaluation_item
             WHERE evaluation_id IN (
@@ -485,11 +458,17 @@ public class BulkDemoDataSeeder implements ApplicationRunner {
         return prefix + "%";
     }
 
-    private Object[] seedAssignmentTitleLikePatterns() {
-        return new Object[] {
-            likePrefix(LEGACY_BULK_ASSIGNMENT_TITLE_PREFIX),
-            likePrefix(BULK_ASSIGNMENT_TITLE_PREFIX)
-        };
+    private Object[] bulkAssignmentTitleLikePatterns() {
+        return BULK_ASSIGNMENT_TITLE_PREFIXES.stream()
+            .map(this::likePrefix)
+            .toArray();
+    }
+
+    private boolean isBulkAssignmentTitle(String title) {
+        if (title == null) {
+            return false;
+        }
+        return BULK_ASSIGNMENT_TITLE_PREFIXES.stream().anyMatch(title::startsWith);
     }
 
     private List<UserEntity> ensureTeacherPool() {
@@ -546,7 +525,7 @@ public class BulkDemoDataSeeder implements ApplicationRunner {
             .sorted(Comparator.comparing(item -> item.id))
             .toList();
         if (baseCourses.size() != BASE_COURSE_IDS.size()) {
-            throw new IllegalStateException("基础课程不存在，无法初始化课程样例数据");
+            throw new IllegalStateException("基础课程不存在，无法初始化 bulk demo 数据");
         }
 
         List<CourseEntity> allCourses = new ArrayList<>(baseCourses);
@@ -643,6 +622,8 @@ public class BulkDemoDataSeeder implements ApplicationRunner {
         Map<Long, Integer> extraAssignmentsByCourse = buildExtraAssignmentsByCourse(courseSeeds, currentCountsByCourse, newAssignmentsNeeded);
         List<String> statusPool = buildStatusPool(courseSeeds, newAssignmentsNeeded, random);
         List<String> modePool = buildModePool(courseSeeds, newAssignmentsNeeded, random);
+        int dueSoonSubmittingQuota = Math.max(0,
+            MIN_DUE_SOON_SUBMITTING_ASSIGNMENTS - countDueSoonSubmittingAssignments(courseSeeds));
 
         List<GeneratedAssignment> assignments = new ArrayList<>();
         int newAssignmentOrder = 0;
@@ -660,7 +641,7 @@ public class BulkDemoDataSeeder implements ApplicationRunner {
                 assignment.title = nextAssignmentTitle(mode, newAssignmentOrder, seed.course.name);
                 assignment.description = buildAssignmentDescription(seed.course.name, mode, status);
                 assignment.allowLate = resolveAllowLate(status, newAssignmentOrder);
-                assignment.deadline = buildDeadline(status, statusOrder);
+                assignment.deadline = buildDeadline(status, statusOrder, dueSoonSubmittingQuota);
                 int[] weightProfile = weightProfileFor(mode, newAssignmentOrder);
                 assignment.peerWeight = weightProfile[0];
                 assignment.teacherWeight = weightProfile[1];
@@ -733,6 +714,14 @@ public class BulkDemoDataSeeder implements ApplicationRunner {
             remaining--;
         }
         return extras;
+    }
+
+    private int countDueSoonSubmittingAssignments(List<CourseSeed> courseSeeds) {
+        return (int) courseSeeds.stream()
+            .flatMap(seed -> assignmentMapper.findByCourseId(seed.course.id).stream())
+            .filter(assignment -> "SUBMITTING".equals(assignment.status))
+            .filter(assignment -> isDueSoonDeadline(assignment.deadline))
+            .count();
     }
 
     private int indexOfCourse(List<CourseSeed> courseSeeds, Long courseId) {
@@ -841,27 +830,24 @@ public class BulkDemoDataSeeder implements ApplicationRunner {
         String statusLabel = switch (status) {
             case "SUBMITTING" -> "提交期";
             case "REVIEWING" -> "互评期";
-            case "CLOSED" -> "已发布最终成绩";
+            case "CLOSED" -> "已生成最终成绩";
             default -> status;
         };
         return "面向 " + courseName + " 的 " + modeLabel + " 任务，当前用于覆盖 " + statusLabel + "、排行榜、统计和治理联调场景。";
     }
 
     private boolean resolveAllowLate(String status, int order) {
-        if ("CLOSED".equals(status)) {
-            return order % 2 == 0;
-        }
-        return order % 3 != 0;
+        return "SUBMITTING".equals(status) && order % 3 != 0;
     }
 
-    private LocalDateTime buildDeadline(String status, int order) {
+    private LocalDateTime buildDeadline(String status, int order, int dueSoonSubmittingQuota) {
         LocalDateTime anchor = referenceTime();
         return switch (status) {
             case "SUBMITTING" -> {
-                if (order < MIN_DUE_SOON_SUBMITTING_ASSIGNMENTS) {
+                if (order < dueSoonSubmittingQuota) {
                     yield anchor.plusHours(18L + order * 9L).withMinute(0).withSecond(0).withNano(0);
                 }
-                long daysOffset = 4L + (order - MIN_DUE_SOON_SUBMITTING_ASSIGNMENTS) % 11;
+                long daysOffset = 4L + Math.floorMod(order - dueSoonSubmittingQuota, 11);
                 yield anchor.plusDays(daysOffset).withHour(23).withMinute(59).withSecond(0).withNano(0);
             }
             case "REVIEWING" -> anchor.minusDays(2L + order % 5).withHour(23).withMinute(59).withSecond(0).withNano(0);
@@ -1040,11 +1026,11 @@ public class BulkDemoDataSeeder implements ApplicationRunner {
     }
 
     private String buildRepoUrl(GeneratedAssignment generated, int index) {
-        return "https://github.com/course-platform-lab/" + slugify(generated.assignment.title) + "-" + String.format(Locale.ROOT, "%02d", index + 1);
+        return "https://github.com/demo/" + slugify(generated.assignment.title) + "-" + String.format(Locale.ROOT, "%02d", index + 1);
     }
 
     private String buildAssetUrl(String kind, GeneratedAssignment generated, int index) {
-        return "https://assets.course-platform.local/" + kind + "/" + slugify(generated.assignment.title) + "/" + (index + 1);
+        return "https://example.com/" + kind + "/" + slugify(generated.assignment.title) + "/" + (index + 1);
     }
 
     private String slugify(String value) {
@@ -1259,7 +1245,7 @@ public class BulkDemoDataSeeder implements ApplicationRunner {
     private long countExistingSubmissions() {
         return BASE_COURSE_IDS.stream()
             .mapToLong(courseId -> assignmentMapper.findByCourseId(courseId).stream()
-                .filter(assignment -> !isSeedAssignment(assignment.title))
+                .filter(assignment -> !isBulkAssignmentTitle(assignment.title))
                 .mapToLong(assignment -> submissionMapper.findSubmissionsByAssignmentId(assignment.id).size())
                 .sum())
             .sum();
@@ -1268,13 +1254,9 @@ public class BulkDemoDataSeeder implements ApplicationRunner {
     private long countExistingEvaluations() {
         return BASE_COURSE_IDS.stream()
             .flatMap(courseId -> assignmentMapper.findByCourseId(courseId).stream())
-            .filter(assignment -> !isSeedAssignment(assignment.title))
+            .filter(assignment -> !isBulkAssignmentTitle(assignment.title))
             .mapToLong(assignment -> evaluationMapper.findByAssignmentId(assignment.id, null, null, null, false).size())
             .sum();
-    }
-
-    private boolean isSeedAssignment(String title) {
-        return title != null && (title.startsWith(LEGACY_BULK_ASSIGNMENT_TITLE_PREFIX) || title.startsWith(BULK_ASSIGNMENT_TITLE_PREFIX));
     }
 
     private <T> List<T> rotateList(List<T> source, int offset) {

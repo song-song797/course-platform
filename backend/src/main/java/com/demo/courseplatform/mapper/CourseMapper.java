@@ -14,14 +14,14 @@ import org.apache.ibatis.annotations.Delete;
 public interface CourseMapper {
 
     @Select("""
-        SELECT id, code, name, term
+        SELECT id, code, name, term, course_deadline
         FROM course
         ORDER BY id
         """)
     List<CourseEntity> findAll();
 
     @Select("""
-        SELECT c.id, c.code, c.name, c.term
+        SELECT c.id, c.code, c.name, c.term, c.course_deadline
         FROM course c
         INNER JOIN course_member cm ON cm.course_id = c.id
         WHERE cm.user_id = #{userId}
@@ -30,15 +30,15 @@ public interface CourseMapper {
     List<CourseEntity> findByUserId(@Param("userId") Long userId);
 
     @Select("""
-        SELECT id, code, name, term
+        SELECT id, code, name, term, course_deadline
         FROM course
         WHERE id = #{id}
         """)
     CourseEntity findById(@Param("id") Long id);
 
     @Insert("""
-        INSERT INTO course (code, name, term)
-        VALUES (#{code}, #{name}, #{term})
+        INSERT INTO course (code, name, term, course_deadline)
+        VALUES (#{code}, #{name}, #{term}, #{courseDeadline})
         """)
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(CourseEntity entity);
