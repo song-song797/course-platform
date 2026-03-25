@@ -283,7 +283,7 @@ const coursesWithDeadline = computed(() => page.value.list.filter((course) => Bo
                     </el-button>
                     <el-button @click="openAssignment(`/teacher/assignments/${assignment.id}/review`)">评分记录</el-button>
                     <el-button type="primary" @click="openAssignment(`/teacher/assignments/${assignment.id}/rubric`)">评分规则</el-button>
-                    <el-button type="success" @click="openAssignment(`/teacher/assignments/${assignment.id}/stats`)">统计分析</el-button>
+                    <el-button type="success" class="result-cta" @click="openAssignment(`/teacher/assignments/${assignment.id}/stats`)">统计分析</el-button>
                   </div>
                 </div>
               </div>

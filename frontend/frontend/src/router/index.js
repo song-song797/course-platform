@@ -42,6 +42,7 @@ const routes = [
           title: '课程与成员',
           description: '维护课程、成员和初始化配置',
           order: 1,
+          theme: 'student-periwinkle',
         },
       },
       {
@@ -67,7 +68,7 @@ const routes = [
           title: '作业详情',
           description: '查看作业说明、分组信息和评分规则',
           order: 2,
-          theme: 'student-periwinkle',
+          theme: 'detail-aurora',
         },
       },
       {
@@ -80,7 +81,7 @@ const routes = [
           title: '提交作品',
           description: '维护项目链接、附件和提交说明',
           order: 3,
-          theme: 'student-periwinkle',
+          theme: 'detail-aurora',
         },
       },
       {
@@ -93,7 +94,7 @@ const routes = [
           title: '项目广场',
           description: '浏览项目并完成匿名互评',
           order: 4,
-          theme: 'student-periwinkle',
+          theme: 'detail-aurora',
         },
       },
       {
@@ -106,7 +107,7 @@ const routes = [
           title: '结果看板',
           description: '查看得分、排名和评语反馈',
           order: 5,
-          theme: 'student-periwinkle',
+          theme: 'detail-aurora',
         },
       },
       {
@@ -119,6 +120,7 @@ const routes = [
           title: '授课课程',
           description: '进入作业分组、评分和统计入口',
           order: 1,
+          theme: 'student-periwinkle',
         },
       },
       {
@@ -131,6 +133,7 @@ const routes = [
           title: '小组管理',
           description: '配置课程小组和成员归属关系',
           order: 2,
+          theme: 'detail-aurora',
         },
       },
       {
@@ -143,6 +146,7 @@ const routes = [
           title: '评分规则',
           description: '调整 Rubric 维度、说明和权重',
           order: 3,
+          theme: 'detail-aurora',
         },
       },
       {
@@ -155,6 +159,7 @@ const routes = [
           title: '评分治理',
           description: '查看提交、教师评分和异常治理',
           order: 4,
+          theme: 'detail-aurora',
         },
       },
       {
@@ -167,6 +172,7 @@ const routes = [
           title: '统计分析',
           description: '查看分布、排行榜和评分影响',
           order: 5,
+          theme: 'detail-aurora',
         },
       },
     ],

@@ -128,7 +128,7 @@ onUnmounted(() => {
             提交作品
           </el-button>
           <el-button type="primary" @click="router.push(`/student/assignments/${assignment.id}/projects`)">项目广场</el-button>
-          <el-button type="success" @click="router.push(`/student/assignments/${assignment.id}/dashboard`)">结果看板</el-button>
+          <el-button type="success" class="result-cta" @click="router.push(`/student/assignments/${assignment.id}/dashboard`)">结果看板</el-button>
         </div>
       </div>
 

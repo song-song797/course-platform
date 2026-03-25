@@ -98,6 +98,18 @@ function taskButtonType(task) {
   return 'primary'
 }
 
+function isResultTask(task) {
+  return task?.taskType === 'RESULT_AVAILABLE'
+}
+
+function taskButtonClass(task) {
+  return isResultTask(task) ? 'result-cta' : ''
+}
+
+function quickActionButtonClass(action) {
+  return action?.key?.startsWith('result-') ? 'result-cta' : ''
+}
+
 function cleanSegment(text) {
   return (text || '').replace(/\s+/g, ' ').trim()
 }
@@ -226,7 +238,7 @@ const quickActions = computed(() => {
             </div>
           </div>
           <div class="focus-task__actions">
-            <el-button :type="taskButtonType(primaryTask)" @click="goTask(primaryTask)">
+            <el-button :type="taskButtonType(primaryTask)" :class="taskButtonClass(primaryTask)" @click="goTask(primaryTask)">
               {{ primaryTask.actionLabel || '立即处理' }}
             </el-button>
             <el-button @click="openAssignment(primaryTask.assignmentId)">查看作业</el-button>
@@ -303,7 +315,7 @@ const quickActions = computed(() => {
               <div class="task-row__side">
                 <p>{{ task.courseName }}</p>
                 <div class="toolbar">
-                  <el-button :type="taskButtonType(task)" @click="goTask(task)">{{ task.actionLabel || '立即处理' }}</el-button>
+                  <el-button :type="taskButtonType(task)" :class="taskButtonClass(task)" @click="goTask(task)">{{ task.actionLabel || '立即处理' }}</el-button>
                   <el-button @click="openAssignment(task.assignmentId)">查看作业</el-button>
                 </div>
               </div>
@@ -394,7 +406,7 @@ const quickActions = computed(() => {
               <span class="layout-chip">{{ action.label }}</span>
               <strong>{{ action.title }}</strong>
               <p>{{ action.description }}</p>
-              <el-button :type="action.type" @click="action.onClick">{{ action.actionText }}</el-button>
+              <el-button :type="action.type" :class="quickActionButtonClass(action)" @click="action.onClick">{{ action.actionText }}</el-button>
             </article>
           </div>
           <el-empty v-else description="当前没有可用的快捷处理入口" :image-size="72" />
@@ -435,7 +447,7 @@ const quickActions = computed(() => {
               <span class="layout-chip">最近放榜</span>
               <strong>{{ displayTaskTitle(firstResult.assignmentTitle) }}</strong>
               <p>{{ firstResult.courseName }} · 可直接查看排名和最终得分</p>
-              <el-button type="success" @click="goResultHighlight(firstResult)">查看结果看板</el-button>
+              <el-button type="success" class="result-cta" @click="goResultHighlight(firstResult)">查看结果看板</el-button>
             </article>
 
             <el-empty v-if="!firstReview && !firstResult" description="最近还没有新的互评或结果动态" :image-size="72" />
